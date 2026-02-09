@@ -7,8 +7,15 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Skeleton from '@/components/ui/Skeleton';
 import ModeToggle from './ModeToggle';
+import MethodToggle from './MethodToggle';
 import AnnotatedClue from './AnnotatedClue';
-import type { SolveResponse, SolveAnswerResponse, SolveHintResponse } from '@/types/api';
+import type {
+  SolveResponse,
+  SolveAnswerResponse,
+  SolveHintResponse,
+  SolveMethod,
+  SolveResultWithMethod,
+} from '@/types/api';
 
 function isAnswerResponse(r: SolveResponse): r is SolveAnswerResponse {
   return 'answer' in r;
@@ -18,12 +25,89 @@ function isHintResponse(r: SolveResponse): r is SolveHintResponse {
   return 'hint' in r;
 }
 
+/**
+ * Render a single solve result card.
+ */
+function ResultCard({
+  result,
+  methodLabel,
+}: {
+  result: SolveResponse;
+  methodLabel?: string;
+}) {
+  return (
+    <Card>
+      <div className="flex flex-col gap-4">
+        {/* Method badge + clue type badge */}
+        <div className="flex flex-wrap items-center gap-2">
+          {methodLabel && (
+            <Badge variant="default">{methodLabel}</Badge>
+          )}
+          <Badge variant="success">
+            {isAnswerResponse(result)
+              ? result.clueTypeLabel
+              : result.clueTypeLabel}
+          </Badge>
+          <Badge
+            variant={
+              result.confidence === 'high'
+                ? 'success'
+                : result.confidence === 'medium'
+                  ? 'warning'
+                  : 'default'
+            }
+          >
+            {result.confidence} confidence
+          </Badge>
+        </div>
+
+        {/* Answer (answer mode only) */}
+        {isAnswerResponse(result) && (
+          <div>
+            <h3 className="text-sm font-medium text-muted mb-1">Answer</h3>
+            <p className="text-2xl font-bold tracking-wider text-primary font-mono">
+              {result.answer}
+            </p>
+          </div>
+        )}
+
+        {/* Hint (hint mode only) */}
+        {isHintResponse(result) && (
+          <div>
+            <h3 className="text-sm font-medium text-muted mb-1">Hint</h3>
+            <p className="text-base leading-relaxed">{result.hint}</p>
+          </div>
+        )}
+
+        {/* Definition */}
+        <div>
+          <h3 className="text-sm font-medium text-muted mb-1">Definition</h3>
+          <p className="text-base italic">&ldquo;{result.definition}&rdquo;</p>
+        </div>
+
+        {/* Annotation (answer mode only) */}
+        {isAnswerResponse(result) && (
+          <div>
+            <h3 className="text-sm font-medium text-muted mb-1">Annotation</h3>
+            <AnnotatedClue
+              annotation={result.annotation}
+              className="text-base leading-relaxed"
+            />
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function SolverForm() {
   const [clue, setClue] = useState('');
   const [letterPattern, setLetterPattern] = useState('');
   const [mode, setMode] = useState<'hint' | 'answer'>('hint');
+  const [method, setMethod] = useState<SolveMethod>('traditional');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SolveResponse | null>(null);
+  const [bothResults, setBothResults] = useState<SolveResultWithMethod[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
@@ -35,6 +119,7 @@ export default function SolverForm() {
       setLoading(true);
       setError(null);
       setResult(null);
+      setBothResults(null);
 
       try {
         const res = await fetch('/api/solve', {
@@ -44,6 +129,7 @@ export default function SolverForm() {
             clue: clue.trim(),
             letterPattern: letterPattern.trim() || undefined,
             mode,
+            method,
           }),
         });
 
@@ -54,14 +140,19 @@ export default function SolverForm() {
           return;
         }
 
-        setResult(data);
+        // When method is 'both', response is an array of SolveResultWithMethod
+        if (method === 'both' && Array.isArray(data)) {
+          setBothResults(data as SolveResultWithMethod[]);
+        } else {
+          setResult(data as SolveResponse);
+        }
       } catch {
         setError('Network error. Please check your connection and try again.');
       } finally {
         setLoading(false);
       }
     },
-    [clue, letterPattern, mode]
+    [clue, letterPattern, mode, method]
   );
 
   return (
@@ -89,6 +180,7 @@ export default function SolverForm() {
               />
             </div>
             <ModeToggle mode={mode} onChange={setMode} />
+            <MethodToggle method={method} onChange={setMethod} />
           </div>
 
           <Button
@@ -148,71 +240,22 @@ export default function SolverForm() {
           </Card>
         )}
 
+        {/* Single result (traditional or ai) */}
         {result && !loading && (
-          <Card>
-            <div className="flex flex-col gap-4">
-              {/* Clue type badge */}
-              <div className="flex items-center gap-2">
-                <Badge variant="success">
-                  {isAnswerResponse(result)
-                    ? result.clueTypeLabel
-                    : result.clueTypeLabel}
-                </Badge>
-                <Badge
-                  variant={
-                    result.confidence === 'high'
-                      ? 'success'
-                      : result.confidence === 'medium'
-                        ? 'warning'
-                        : 'default'
-                  }
-                >
-                  {result.confidence} confidence
-                </Badge>
-              </div>
+          <ResultCard result={result} />
+        )}
 
-              {/* Answer (answer mode only) */}
-              {isAnswerResponse(result) && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted mb-1">
-                    Answer
-                  </h3>
-                  <p className="text-2xl font-bold tracking-wider text-primary font-mono">
-                    {result.answer}
-                  </p>
-                </div>
-              )}
-
-              {/* Hint (hint mode only) */}
-              {isHintResponse(result) && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted mb-1">Hint</h3>
-                  <p className="text-base leading-relaxed">{result.hint}</p>
-                </div>
-              )}
-
-              {/* Definition */}
-              <div>
-                <h3 className="text-sm font-medium text-muted mb-1">
-                  Definition
-                </h3>
-                <p className="text-base italic">&ldquo;{result.definition}&rdquo;</p>
-              </div>
-
-              {/* Annotation (answer mode only) */}
-              {isAnswerResponse(result) && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted mb-1">
-                    Annotation
-                  </h3>
-                  <AnnotatedClue
-                    annotation={result.annotation}
-                    className="text-base leading-relaxed"
-                  />
-                </div>
-              )}
-            </div>
-          </Card>
+        {/* Side-by-side results (both) */}
+        {bothResults && !loading && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {bothResults.map((r) => (
+              <ResultCard
+                key={r.method}
+                result={r.result}
+                methodLabel={r.method === 'traditional' ? 'Traditional' : 'AI'}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

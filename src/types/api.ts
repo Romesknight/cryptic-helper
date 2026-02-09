@@ -1,7 +1,10 @@
+export type SolveMethod = 'traditional' | 'ai' | 'both';
+
 export interface SolveRequest {
   clue: string;
   letterPattern?: string;
   mode: 'hint' | 'answer';
+  method?: SolveMethod;
 }
 
 export interface SolveAnswerResponse {
@@ -22,6 +25,11 @@ export interface SolveHintResponse {
 }
 
 export type SolveResponse = SolveAnswerResponse | SolveHintResponse;
+
+export interface SolveResultWithMethod {
+  method: 'traditional' | 'ai';
+  result: SolveResponse;
+}
 
 export interface ApiError {
   error: string;

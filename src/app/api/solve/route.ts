@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { solveClue } from '@/lib/claude/client';
+import { solveClue } from '@/lib/gemini/client';
+import { solveTraditional } from '@/lib/solvers';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { MAX_CLUE_LENGTH } from '@/lib/constants';
+import type { SolveMethod, SolveResultWithMethod } from '@/types/api';
 
 export async function POST(request: NextRequest) {
   // Rate limiting
@@ -27,7 +29,12 @@ export async function POST(request: NextRequest) {
   }
 
   // Parse body
-  let body: { clue?: string; letterPattern?: string; mode?: string };
+  let body: {
+    clue?: string;
+    letterPattern?: string;
+    mode?: string;
+    method?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -37,7 +44,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { clue, letterPattern, mode } = body;
+  const { clue, letterPattern, mode, method: rawMethod } = body;
 
   // Validate required fields
   if (!clue || typeof clue !== 'string' || clue.trim().length === 0) {
@@ -64,15 +71,47 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Call Claude
-  try {
-    const result = await solveClue(
-      clue.trim(),
-      mode,
-      letterPattern?.trim() || undefined
-    );
+  // Default to traditional if method not specified
+  const method: SolveMethod =
+    rawMethod === 'ai' || rawMethod === 'both' ? rawMethod : 'traditional';
 
-    return NextResponse.json(result);
+  const trimmedClue = clue.trim();
+  const trimmedPattern = letterPattern?.trim() || undefined;
+
+  try {
+    if (method === 'traditional') {
+      const result = await solveTraditional(trimmedClue, mode, trimmedPattern);
+      return NextResponse.json(result);
+    }
+
+    if (method === 'ai') {
+      const result = await solveClue(trimmedClue, mode, trimmedPattern);
+      return NextResponse.json(result);
+    }
+
+    // method === 'both': run in parallel, return array
+    const [traditionalResult, aiResult] = await Promise.allSettled([
+      solveTraditional(trimmedClue, mode, trimmedPattern),
+      solveClue(trimmedClue, mode, trimmedPattern),
+    ]);
+
+    const results: SolveResultWithMethod[] = [];
+
+    if (traditionalResult.status === 'fulfilled') {
+      results.push({ method: 'traditional', result: traditionalResult.value });
+    }
+    if (aiResult.status === 'fulfilled') {
+      results.push({ method: 'ai', result: aiResult.value });
+    }
+
+    if (results.length === 0) {
+      return NextResponse.json(
+        { error: 'Both solvers failed. Please try again.', code: 'SOLVE_ERROR' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(results);
   } catch (error) {
     console.error('Solve error:', error);
 
@@ -80,7 +119,7 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : 'An unexpected error occurred';
 
     // Don't expose internal details
-    const safeMessage = message.includes('ANTHROPIC_API_KEY')
+    const safeMessage = message.includes('API_KEY')
       ? 'API configuration error. Please contact support.'
       : 'Failed to analyze clue. Please try again.';
 
