@@ -45,6 +45,7 @@ export default function ModeToggle({ mode, onChange }: ModeToggleProps) {
         onKeyDown={handleKeyDown}
       >
         <button
+          type="button"
           ref={hintRef}
           role="tab"
           aria-selected={mode === 'hint'}
@@ -61,6 +62,7 @@ export default function ModeToggle({ mode, onChange }: ModeToggleProps) {
           Hint
         </button>
         <button
+          type="button"
           ref={answerRef}
           role="tab"
           aria-selected={mode === 'answer'}
