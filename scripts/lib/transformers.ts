@@ -12,6 +12,7 @@ import type {
   TransformedClue,
 } from './types.js';
 import { INDICATOR_COLUMNS, INDICATOR_TYPE_MAP } from './types.js';
+import { normalizeText } from '../../src/lib/utils.js';
 
 // ── Sanitization ──
 
@@ -20,12 +21,14 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, '');
 }
 
-/** Remove non-printable characters and normalize unicode. */
+/** Remove non-printable characters, normalize unicode, and normalize typographic chars to ASCII. */
 function sanitizeText(text: string): string {
-  return stripHtml(text)
-    .normalize('NFC')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .trim();
+  return normalizeText(
+    stripHtml(text)
+      .normalize('NFC')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      .trim()
+  );
 }
 
 // ── Validation ──

@@ -6,9 +6,12 @@
  * JSON cache so each entry is only processed once.
  *
  * Categories handled:
+ *   - NORMALIZE: cache keys (clue text) normalized to plain ASCII
  *   - FIX: HTML entity leftovers, trailing clue bleed
  *   - DISCARD: CSS/code artifacts, blog commentary, tiny fragments
  */
+
+import { normalizeText } from '../../src/lib/utils.js';
 
 export interface AnnotationEntry {
   answer: string;
@@ -201,4 +204,34 @@ export function cleanAnnotations(cache: AnnotationCache): {
   }
 
   return { alreadyClean, fixed, discarded, discardReasons };
+}
+
+/**
+ * Normalize all cache keys (clue text) to plain ASCII.
+ *
+ * Smart quotes, em dashes, etc. in keys are replaced with their ASCII
+ * equivalents so they match the normalized clue text stored in the DB.
+ * If normalization produces a duplicate key, the existing entry is kept.
+ *
+ * @returns A new cache with normalized keys and the count of keys renamed.
+ */
+export function normalizeCacheKeys(cache: AnnotationCache): {
+  normalized: AnnotationCache;
+  keysRenamed: number;
+} {
+  const normalized: AnnotationCache = {};
+  let keysRenamed = 0;
+
+  for (const [key, entry] of Object.entries(cache)) {
+    const newKey = normalizeText(key);
+    if (newKey !== key) {
+      keysRenamed++;
+    }
+    // Keep first occurrence if there are duplicate normalized keys
+    if (!normalized[newKey]) {
+      normalized[newKey] = entry;
+    }
+  }
+
+  return { normalized, keysRenamed };
 }

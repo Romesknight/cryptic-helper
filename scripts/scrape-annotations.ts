@@ -17,6 +17,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { normalizeText } from '../src/lib/utils.js';
 
 // ── Paths ──
 
@@ -127,20 +128,24 @@ function buildWorkList(): ClueInfo[] {
   // Map eigenfoo clues, filtering to only those in our local DB
   const clues: ClueInfo[] = [];
   for (const row of rows) {
-    // Strip HTML and clean the clue text, then strip enumeration — same as transformers.ts
-    const cleanClue = row.clue
-      .replace(/<[^>]*>/g, '')
-      .normalize('NFC')
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-      .trim()
+    // Strip HTML, normalize typographic chars to ASCII, then strip enumeration
+    const cleanClue = normalizeText(
+      row.clue
+        .replace(/<[^>]*>/g, '')
+        .normalize('NFC')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .trim()
+    )
       .replace(/\s*\(\d+(?:[,-]\d+)*\)\s*$/, '')
       .trim();
 
-    const cleanAnswer = row.answer
-      .replace(/<[^>]*>/g, '')
-      .normalize('NFC')
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-      .trim()
+    const cleanAnswer = normalizeText(
+      row.answer
+        .replace(/<[^>]*>/g, '')
+        .normalize('NFC')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .trim()
+    )
       .toUpperCase()
       .replace(/[^A-Z]/g, '');
 
@@ -154,11 +159,13 @@ function buildWorkList(): ClueInfo[] {
       answer: cleanAnswer,
       source_url: row.source_url.trim(),
       source: (row.source || '').trim(),
-      definition: row.definition
-        .replace(/<[^>]*>/g, '')
-        .normalize('NFC')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-        .trim(),
+      definition: normalizeText(
+        row.definition
+          .replace(/<[^>]*>/g, '')
+          .normalize('NFC')
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+          .trim()
+      ),
     });
   }
 

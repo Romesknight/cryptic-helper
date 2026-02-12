@@ -18,7 +18,7 @@ import path from 'path';
 import fs from 'fs';
 import { readEigenfooClues } from './lib/eigenfoo-reader.js';
 import { transformRow } from './lib/transformers.js';
-import { cleanAnnotations } from './lib/annotation-cleaner.js';
+import { cleanAnnotations, normalizeCacheKeys } from './lib/annotation-cleaner.js';
 import type { AnnotationCache } from './lib/annotation-cleaner.js';
 import type { TransformedClue } from './lib/types.js';
 
@@ -107,12 +107,20 @@ function main() {
   let annotationsDiscarded = 0;
   if (fs.existsSync(ANNOTATIONS_PATH)) {
     console.log('Loading scraped annotations cache...');
-    const cache: AnnotationCache = JSON.parse(fs.readFileSync(ANNOTATIONS_PATH, 'utf-8'));
+    let cache: AnnotationCache = JSON.parse(fs.readFileSync(ANNOTATIONS_PATH, 'utf-8'));
     const cacheSize = Object.keys(cache).length;
     console.log(`Loaded ${cacheSize} cached annotations`);
 
+    // Normalize cache keys to plain ASCII (smart quotes → straight, etc.)
+    const { normalized, keysRenamed } = normalizeCacheKeys(cache);
+    cache = normalized;
+    if (keysRenamed > 0) {
+      console.log(`Normalized ${keysRenamed} cache keys to plain ASCII`);
+    }
+
     // Clean any uncleaned entries and persist results
     const cleanStats = cleanAnnotations(cache);
+    const cacheChanged = keysRenamed > 0 || cleanStats.fixed > 0 || cleanStats.discarded > 0;
     if (cleanStats.fixed > 0 || cleanStats.discarded > 0) {
       console.log(`Cleaned ${cleanStats.fixed + cleanStats.discarded} new entries: ${cleanStats.fixed} fixed, ${cleanStats.discarded} discarded`);
       if (Object.keys(cleanStats.discardReasons).length > 0) {
@@ -120,11 +128,13 @@ function main() {
           console.log(`  ${reason}: ${count}`);
         }
       }
-      // Write cleaned cache back to disk
-      fs.writeFileSync(ANNOTATIONS_PATH, JSON.stringify(cache, null, 2));
-      console.log('Updated annotations cache with cleaned flags');
     } else if (cleanStats.alreadyClean > 0) {
       console.log(`All ${cleanStats.alreadyClean} entries already cleaned`);
+    }
+    // Persist if anything changed (key normalization or cleaning)
+    if (cacheChanged) {
+      fs.writeFileSync(ANNOTATIONS_PATH, JSON.stringify(cache, null, 2));
+      console.log('Updated annotations cache');
     }
 
     // Apply non-discarded annotations to clues
