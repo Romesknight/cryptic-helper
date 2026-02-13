@@ -76,8 +76,18 @@ export async function POST(request: NextRequest) {
   const method: SolveMethod =
     rawMethod === 'ai' || rawMethod === 'both' ? rawMethod : 'traditional';
 
-  const trimmedClue = normalizeText(clue.trim());
-  const trimmedPattern = letterPattern?.trim() || undefined;
+  let trimmedClue = normalizeText(clue.trim());
+  let trimmedPattern = letterPattern?.trim() || undefined;
+
+  // Extract letter pattern from clue text if not provided via form field.
+  // Handles formats like (8), (3,5), (3, 5), (2-2-2), (3-2,4)
+  if (!trimmedPattern) {
+    const patternMatch = trimmedClue.match(/\((\d+(?:\s*[,-]\s*\d+)*)\)\s*$/);
+    if (patternMatch) {
+      trimmedPattern = patternMatch[1].replace(/[-\s]+/g, ',');
+      trimmedClue = trimmedClue.slice(0, patternMatch.index).trim();
+    }
+  }
 
   try {
     if (method === 'traditional') {
