@@ -38,8 +38,10 @@ yarn-error.log*
 # vercel
 .vercel
 
-# eigenfoo dataset (196MB SQLite)
+# eigenfoo dataset (196MB SQLite) and WAL files
 scripts/data/*.db
+scripts/data/*.db-shm
+scripts/data/*.db-wal
 
 # typescript
 *.tsbuildinfo
