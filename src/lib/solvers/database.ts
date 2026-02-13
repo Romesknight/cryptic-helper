@@ -18,7 +18,8 @@ interface DatabaseResult {
  */
 function hasSupabaseConfig(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return !!url && !url.startsWith('YOUR_');
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return !!url && !url.startsWith('YOUR_') && !!key && !key.startsWith('YOUR_');
 }
 
 // ── Local SQLite fallback ──
@@ -99,8 +100,11 @@ function searchLocalDatabase(
     if (ftsRows.length > 0) {
       return mapLocalResults(ftsRows);
     }
-  } catch {
+  } catch (err) {
     // FTS query failed (e.g. special characters) — fall through to LIKE
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[solver] FTS search failed:', err);
+    }
   }
 
   // Fallback: LIKE search
@@ -120,7 +124,10 @@ function searchLocalDatabase(
       .all(`%${cleanClue}%`, ...params) as LocalRow[];
 
     return mapLocalResults(likeRows);
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[solver] LIKE search failed:', err);
+    }
     return [];
   }
 }
@@ -231,8 +238,11 @@ export async function searchDatabase(
     if (!data?.length) return [];
 
     return mapResults(data);
-  } catch {
+  } catch (err) {
     // Database not available — return empty
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[solver] Supabase search failed:', err);
+    }
     return [];
   }
 }

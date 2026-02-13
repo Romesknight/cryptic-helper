@@ -105,6 +105,13 @@ function fixHtmlEntities(text: string): string {
   return result;
 }
 
+/** Strip any remaining HTML tags from annotation text. */
+function stripHtmlTags(text: string): string {
+  // Only match valid HTML tags (tag names start with a letter).
+  // Avoids breaking math notation like "3 < 5" or "A > B".
+  return text.replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?\s*>/g, '');
+}
+
 /** Remove trailing clue bleed (next clue entry appended to this one). */
 function fixTrailingClueBleed(text: string): string {
   let result = text.replace(CLUE_BLEED_PATTERN, '');
@@ -183,6 +190,7 @@ export function cleanAnnotations(cache: AnnotationCache): {
     // Apply fixes
     let annotation = entry.annotation;
     annotation = fixHtmlEntities(annotation);
+    annotation = stripHtmlTags(annotation);
     annotation = fixTrailingClueBleed(annotation);
     annotation = fixLeadingFragment(annotation);
 

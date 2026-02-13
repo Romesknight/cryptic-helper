@@ -38,6 +38,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# eigenfoo dataset (196MB SQLite)
+scripts/data/*.db
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

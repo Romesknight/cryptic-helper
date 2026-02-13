@@ -5,6 +5,9 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
+// Note: This in-memory rate limiter is safe for single-process Node.js
+// (no async operations between read and write). In serverless/multi-process
+// deployments, use Redis or a shared store instead.
 const store = new Map<string, RateLimitEntry>();
 
 /**

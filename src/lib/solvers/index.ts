@@ -40,8 +40,11 @@ export async function solveTraditional(
         confidence: best.confidence,
       } satisfies SolveHintResponse;
     }
-  } catch {
+  } catch (err) {
     // Database unavailable — continue to other methods
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[solver] Database search failed:', err);
+    }
   }
 
   // 2. Try hidden word solver

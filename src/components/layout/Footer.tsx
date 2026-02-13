@@ -27,6 +27,27 @@ export default function Footer() {
             </ul>
           </nav>
         </div>
+        <p className="mt-3 text-center text-xs text-muted/70">
+          Crossword clue data sourced from the{' '}
+          <a
+            href="https://cryptics.georgeho.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Cryptics Dataset
+          </a>
+          , made available under the{' '}
+          <a
+            href="https://opendatacommons.org/licenses/odbl/1-0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            Open Database License (ODbL)
+          </a>
+          . Individual clues are the work of their respective setters and publishers.
+        </p>
       </div>
     </footer>
   );

@@ -3,6 +3,7 @@ import { solveClue } from '@/lib/gemini/client';
 import { solveTraditional } from '@/lib/solvers';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { MAX_CLUE_LENGTH } from '@/lib/constants';
+import { normalizeText } from '@/lib/utils';
 import type { SolveMethod, SolveResultWithMethod } from '@/types/api';
 
 export async function POST(request: NextRequest) {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
   const method: SolveMethod =
     rawMethod === 'ai' || rawMethod === 'both' ? rawMethod : 'traditional';
 
-  const trimmedClue = clue.trim();
+  const trimmedClue = normalizeText(clue.trim());
   const trimmedPattern = letterPattern?.trim() || undefined;
 
   try {

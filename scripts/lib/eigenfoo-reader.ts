@@ -50,8 +50,12 @@ export function readEigenfooClues(limitPerType = 300): EigenfooRawRow[] {
 
   const allRows: EigenfooRawRow[] = [];
   const seenRowids = new Set<string>();
+  const ALLOWED_COLUMNS = new Set(INDICATOR_COLUMNS);
 
   for (const col of INDICATOR_COLUMNS) {
+    if (!ALLOWED_COLUMNS.has(col)) {
+      throw new Error(`Invalid indicator column: ${col}`);
+    }
     const stmt = db.prepare(`
       SELECT
         c.clue,
