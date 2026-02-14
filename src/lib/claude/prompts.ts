@@ -49,7 +49,11 @@ You MUST respond with valid JSON only. No markdown code blocks, no extra text.
 1. Always identify the definition part of the clue first
 2. The definition is almost always at the very start or very end of the clue
 3. Be precise about which words form the indicator and which form the fodder
-4. If you're not confident in the answer, say so with "low" confidence
+4. Set confidence accurately using these strict criteria:
+   - "high": The letter count matches the pattern AND wordplay fully accounts for every letter AND the definition clearly fits. All three must be met.
+   - "medium": Answer fits the definition and letter count, BUT wordplay has gaps, uncertainties, or relies on uncommon abbreviations.
+   - "low": Answer is speculative, multiple answers possible, wordplay is unclear/forced, or clue type uncertain.
+   Default to "medium" unless you can justify "high" with complete certainty
 5. In hint mode, NEVER reveal the answer — guide the solver to find it themselves
 6. Consider the letter pattern if provided — it constrains the answer length`;
 
