@@ -161,7 +161,7 @@ export default function SolverForm() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
             label="Cryptic clue"
-            placeholder='e.g. "Crazy leader is more dangerous (8)"'
+            placeholder='e.g. "Crazy leader is deadlier (8)"'
             value={clue}
             onChange={(e) => setClue(e.target.value)}
             maxLength={500}
@@ -169,18 +169,17 @@ export default function SolverForm() {
             autoFocus
           />
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <Input
-                label="Letter pattern (optional)"
-                placeholder="e.g. 8 or 4,3"
-                value={letterPattern}
-                onChange={(e) => setLetterPattern(e.target.value)}
-                helpText="Number of letters, e.g. 7 or 4,3 for two words"
-              />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-start">
+            <Input
+              label="Letter pattern (optional)"
+              placeholder="e.g. 8 or 4,3"
+              value={letterPattern}
+              onChange={(e) => setLetterPattern(e.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-3 sm:contents">
+              <ModeToggle mode={mode} onChange={setMode} />
+              <MethodToggle method={method} onChange={setMethod} />
             </div>
-            <ModeToggle mode={mode} onChange={setMode} />
-            <MethodToggle method={method} onChange={setMethod} />
           </div>
 
           <Button
