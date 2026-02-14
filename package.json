@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:import": "npx tsx scripts/import-eigenfoo.ts",
+    "db:seed": "npx tsx scripts/seed-clues.ts",
+    "db:build-local": "npx tsx scripts/build-local-db.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
