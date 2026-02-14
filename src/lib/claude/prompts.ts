@@ -1,20 +1,75 @@
 /**
- * System prompt for the Claude API that instructs it to analyze
- * cryptic crossword clues using standard annotation notation.
+ * System prompt for the AI solver (Gemini 2.5 Flash) that instructs it to
+ * analyze cryptic crossword clues using standard annotation notation.
+ *
+ * Context engineering strategy:
+ * - Enriched clue type definitions with "how to spot" guidance (~180 tokens)
+ * - Few-shot worked examples sourced from clue-types.ts (~350 tokens)
+ * - Chain-of-thought solving process (~80 tokens)
+ * - Total budget: ~1,700 tokens (negligible for Gemini's 1M context window)
  */
-export const SYSTEM_PROMPT = `You are an expert cryptic crossword solver with deep knowledge of all cryptic clue types. Your job is to analyze cryptic crossword clues and explain the wordplay.
+import { CLUE_TYPES, CLUE_EXAMPLES } from '@/data/clue-types';
+
+/** IDs of the canonical few-shot examples (1 per type, difficulty 1). */
+const FEW_SHOT_EXAMPLE_IDS: string[] = [
+  'ex-anag-1',  // Anagram: DEADLIER
+  'ex-hid-1',   // Hidden Word: OPERA
+  'ex-dd-2',    // Double Definition: PORT
+  'ex-char-1',  // Charade: TORNADO
+  'ex-cont-1',  // Container: BROADEN
+  'ex-rev-1',   // Reversal: STRESSED
+  'ex-hom-1',   // Homophone: ALOUD
+  'ex-del-1',   // Deletion: EAST
+  'ex-cd-1',    // Cryptic Definition: POST MORTEM
+];
+
+/**
+ * Build the clue types section with enriched "how to spot" guidance.
+ * Draws from the howToSpot field in CLUE_TYPES for each type.
+ */
+function buildClueTypesSection(): string {
+  const lines = CLUE_TYPES.map((ct) => {
+    return `- ${ct.name.toUpperCase()}: ${ct.description} ${ct.howToSpot}`;
+  });
+  return lines.join('\n');
+}
+
+/**
+ * Build few-shot worked examples from CLUE_EXAMPLES data.
+ * Selects one canonical example per clue type and formats as
+ * compact input→output pairs for in-context learning.
+ */
+function buildFewShotExamples(): string {
+  const examples = FEW_SHOT_EXAMPLE_IDS
+    .map((id) => CLUE_EXAMPLES.find((ex) => ex.id === id))
+    .filter((ex): ex is NonNullable<typeof ex> => ex != null);
+
+  const lines = examples.map((ex) => {
+    const clueType = CLUE_TYPES.find((ct) => ct.slug === ex.clueTypeSlug);
+    const label = clueType?.name.toUpperCase() ?? ex.clueTypeSlug.toUpperCase();
+    return [
+      `Clue: "${ex.clueText}"`,
+      `Answer: ${ex.answer} | Type: ${label} | Confidence: high`,
+      `Annotation: ${ex.annotation}`,
+    ].join('\n');
+  });
+
+  return lines.join('\n\n');
+}
+
+/**
+ * Build the full system prompt. Assembled at import time so the string
+ * is computed once and reused across requests.
+ */
+function buildSystemPrompt(): string {
+  return `You are an expert cryptic crossword solver with deep knowledge of all cryptic clue types. Your job is to analyze cryptic crossword clues and explain the wordplay.
 
 ## Clue Types
 You must identify which type each clue is:
-- ANAGRAM: Letters rearranged (indicators: broken, mixed, wild, crazy, new, etc.)
-- HIDDEN WORD: Answer hidden within the clue text (indicators: in, within, part of, some)
-- DOUBLE DEFINITION: Two separate definitions for the same word
-- CHARADE: Words/fragments chained together (indicators: after, before, following, with)
-- CONTAINER: One element placed inside another (indicators: in, within, around, holding)
-- REVERSAL: Word spelled backwards (indicators: back, returned, up, reflected)
-- HOMOPHONE: Answer sounds like another word (indicators: sounds like, we hear, reportedly)
-- DELETION: Letters removed from a word (indicators: headless, endless, curtailed, almost)
-- CRYPTIC DEFINITION: Entire clue is a misleading/punning definition (often has ? at end)
+${buildClueTypesSection()}
+
+## Worked Examples
+${buildFewShotExamples()}
 
 ## Annotation Notation
 Use this notation consistently in your annotations:
@@ -22,6 +77,14 @@ Use this notation consistently in your annotations:
 - [square brackets] for wordplay indicators (the signal words)
 - {curly braces} for letters that are omitted/deleted
 - (parentheses) for explanations of components — BUT do not use for letter counts like (7)
+
+## Solving Process
+Work through each clue in this order:
+1. Identify the definition — it is almost always at the very start or very end of the clue
+2. Scan remaining words for indicator words that signal the clue type
+3. Determine the clue type based on the indicator
+4. Work the wordplay: apply the operation (rearrange, hide, chain, contain, reverse, delete, etc.)
+5. Verify: does the answer match the letter pattern? Does the definition fit?
 
 ## Response Format
 You MUST respond with valid JSON only. No markdown code blocks, no extra text.
@@ -46,16 +109,16 @@ You MUST respond with valid JSON only. No markdown code blocks, no extra text.
 }
 
 ## Rules
-1. Always identify the definition part of the clue first
-2. The definition is almost always at the very start or very end of the clue
-3. Be precise about which words form the indicator and which form the fodder
-4. Set confidence accurately using these strict criteria:
+1. Set confidence accurately using these strict criteria:
    - "high": The letter count matches the pattern AND wordplay fully accounts for every letter AND the definition clearly fits. All three must be met.
    - "medium": Answer fits the definition and letter count, BUT wordplay has gaps, uncertainties, or relies on uncommon abbreviations.
    - "low": Answer is speculative, multiple answers possible, wordplay is unclear/forced, or clue type uncertain.
    Default to "medium" unless you can justify "high" with complete certainty
-5. In hint mode, NEVER reveal the answer — guide the solver to find it themselves
-6. Consider the letter pattern if provided — it constrains the answer length`;
+2. In hint mode, NEVER reveal the answer — guide the solver to find it themselves
+3. Consider the letter pattern if provided — it constrains the answer length`;
+}
+
+export const SYSTEM_PROMPT = buildSystemPrompt();
 
 /**
  * Build the user prompt for a solve request.
