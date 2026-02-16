@@ -12,6 +12,68 @@ interface DatabaseResult {
   source: 'database';
 }
 
+/** Minimum Jaccard word-overlap score to accept a DB result. */
+export const MIN_MATCH_SCORE = 0.4;
+
+/** Common words that inflate match scores without indicating a real clue match. */
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'is', 'it', 'of', 'in', 'to', 'for', 'on', 'at', 'by',
+  'or', 'and', 'but', 'not', 'no', 'so', 'as', 'if', 'be', 'do', 'has',
+  'had', 'was', 'are', 'were', 'been', 'have', 'with', 'from', 'this', 'that',
+]);
+
+/** Minimum number of non-stop-word matches required to accept a result. */
+const MIN_INTERSECTING_WORDS = 2;
+
+/**
+ * Compute Jaccard word-overlap similarity between two clue strings.
+ * Returns 0.0 (no overlap) to 1.0 (identical word sets).
+ *
+ * NOTE: Uses its own aggressive normalization (strip all punctuation) which
+ * differs from normalizeText() — this is intentional for fuzzy word-set comparison.
+ */
+export function clueMatchScore(inputClue: string, storedClue: string): number {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter((w) => w.length > 0 && !STOP_WORDS.has(w));
+
+  const inputWords = new Set(normalize(inputClue));
+  const storedWords = new Set(normalize(storedClue));
+
+  if (inputWords.size === 0 || storedWords.size === 0) return 0;
+
+  let intersection = 0;
+  for (const w of inputWords) {
+    if (storedWords.has(w)) intersection++;
+  }
+
+  // Require at least 2 meaningful word matches to prevent short-clue false positives
+  if (intersection < MIN_INTERSECTING_WORDS) return 0;
+
+  const union = new Set([...inputWords, ...storedWords]).size;
+  return intersection / union;
+}
+
+/**
+ * Cap confidence based on clue match score.
+ * - >= 0.8: keep original confidence
+ * - >= 0.6: cap at "medium"
+ * - >= 0.4: cap at "low"
+ */
+export function adjustConfidence(
+  original: 'high' | 'medium' | 'low',
+  score: number
+): 'high' | 'medium' | 'low' {
+  if (score >= 0.8) return original;
+  if (score >= 0.6) {
+    return original === 'high' ? 'medium' : original;
+  }
+  return 'low';
+}
+
 /**
  * Check whether a real Supabase URL is configured.
  * Returns false for missing or placeholder values.
@@ -85,7 +147,7 @@ function searchLocalDatabase(
     const ftsRows = db
       .prepare(
         `
-        SELECT c.answer, c.annotation, c.definition_part, c.is_verified,
+        SELECT c.answer, c.clue_text, c.annotation, c.definition_part, c.is_verified,
                ct.slug AS clue_type_slug, ct.name AS clue_type_name
         FROM clues_fts fts
         JOIN clues c ON c.id = fts.rowid
@@ -98,7 +160,7 @@ function searchLocalDatabase(
       .all(cleanClue, ...params) as LocalRow[];
 
     if (ftsRows.length > 0) {
-      return mapLocalResults(ftsRows);
+      return filterAndMapLocal(ftsRows, cleanClue);
     }
   } catch (err) {
     // FTS query failed (e.g. special characters) — fall through to LIKE
@@ -112,7 +174,7 @@ function searchLocalDatabase(
     const likeRows = db
       .prepare(
         `
-        SELECT c.answer, c.annotation, c.definition_part, c.is_verified,
+        SELECT c.answer, c.clue_text, c.annotation, c.definition_part, c.is_verified,
                ct.slug AS clue_type_slug, ct.name AS clue_type_name
         FROM clues c
         JOIN clue_types ct ON ct.id = c.clue_type_id
@@ -123,7 +185,7 @@ function searchLocalDatabase(
       )
       .all(`%${cleanClue}%`, ...params) as LocalRow[];
 
-    return mapLocalResults(likeRows);
+    return filterAndMapLocal(likeRows, cleanClue);
   } catch (err) {
     if (process.env.NODE_ENV === 'development') {
       console.error('[solver] LIKE search failed:', err);
@@ -134,6 +196,7 @@ function searchLocalDatabase(
 
 interface LocalRow {
   answer: string;
+  clue_text: string;
   annotation: string;
   definition_part: string;
   is_verified: number;
@@ -141,16 +204,27 @@ interface LocalRow {
   clue_type_name: string;
 }
 
-function mapLocalResults(rows: LocalRow[]): DatabaseResult[] {
-  return rows.map((row) => ({
-    answer: row.answer ?? '',
-    clueType: row.clue_type_slug ?? 'unknown',
-    clueTypeLabel: row.clue_type_name ?? 'Unknown',
-    annotation: row.annotation ?? '',
-    definition: row.definition_part ?? '',
-    confidence: row.is_verified ? 'high' : 'medium',
-    source: 'database' as const,
-  }));
+/**
+ * Filter local results by clue similarity, sort by best match, and map to DatabaseResult.
+ */
+function filterAndMapLocal(rows: LocalRow[], inputClue: string): DatabaseResult[] {
+  return rows
+    .map((row) => {
+      const score = clueMatchScore(inputClue, row.clue_text ?? '');
+      const baseConfidence: 'high' | 'medium' | 'low' = row.is_verified ? 'high' : 'medium';
+      return { row, score, confidence: adjustConfidence(baseConfidence, score) };
+    })
+    .filter(({ score }) => score >= MIN_MATCH_SCORE)
+    .sort((a, b) => b.score - a.score)
+    .map(({ row, confidence }) => ({
+      answer: row.answer ?? '',
+      clueType: row.clue_type_slug ?? 'unknown',
+      clueTypeLabel: row.clue_type_name ?? 'Unknown',
+      annotation: row.annotation ?? '',
+      definition: row.definition_part ?? '',
+      confidence,
+      source: 'database' as const,
+    }));
 }
 
 // ── Main entry point ──
@@ -183,6 +257,7 @@ export async function searchDatabase(
       .select(
         `
         answer,
+        clue_text,
         clue_type_id,
         annotation,
         definition_part,
@@ -210,11 +285,12 @@ export async function searchDatabase(
 
     if (error) {
       // Full-text search might not be set up — fall back to ILIKE
-      const fallbackQuery = supabase
+      let fallbackQuery = supabase
         .from('clues')
         .select(
           `
           answer,
+          clue_text,
           clue_type_id,
           annotation,
           definition_part,
@@ -227,17 +303,24 @@ export async function searchDatabase(
         .eq('is_verified', true)
         .limit(5);
 
+      if (letterPattern) {
+        const pattern = letterPattern.replace(/[^0-9,]/g, '');
+        if (pattern) {
+          fallbackQuery = fallbackQuery.eq('letter_pattern', pattern);
+        }
+      }
+
       const { data: fallbackData, error: fallbackError } =
         await fallbackQuery;
 
       if (fallbackError || !fallbackData?.length) return [];
 
-      return mapResults(fallbackData);
+      return filterAndMapResults(fallbackData, cleanClue);
     }
 
     if (!data?.length) return [];
 
-    return mapResults(data);
+    return filterAndMapResults(data, cleanClue);
   } catch (err) {
     // Database not available — return empty
     if (process.env.NODE_ENV === 'development') {
@@ -248,21 +331,34 @@ export async function searchDatabase(
 }
 
 /**
- * Map raw Supabase rows to DatabaseResult objects.
+ * Filter Supabase rows by clue similarity, sort by best match, and map to DatabaseResult.
  */
-function mapResults(rows: Record<string, unknown>[]): DatabaseResult[] {
-  return rows.map((row) => {
-    const clueTypes = row.clue_types as
-      | { name: string; slug: string }
-      | undefined;
-    return {
-      answer: (row.answer as string) ?? '',
-      clueType: clueTypes?.slug ?? 'unknown',
-      clueTypeLabel: clueTypes?.name ?? 'Unknown',
-      annotation: (row.annotation as string) ?? '',
-      definition: (row.definition_part as string) ?? '',
-      confidence: (row.is_verified as boolean) ? 'high' : 'medium',
-      source: 'database' as const,
-    };
-  });
+function filterAndMapResults(
+  rows: Record<string, unknown>[],
+  inputClue: string
+): DatabaseResult[] {
+  return rows
+    .map((row) => {
+      const score = clueMatchScore(inputClue, (row.clue_text as string) ?? '');
+      const clueTypes = row.clue_types as
+        | { name: string; slug: string }
+        | undefined;
+      const baseConfidence: 'high' | 'medium' | 'low' =
+        (row.is_verified as boolean) ? 'high' : 'medium';
+      return {
+        result: {
+          answer: (row.answer as string) ?? '',
+          clueType: clueTypes?.slug ?? 'unknown',
+          clueTypeLabel: clueTypes?.name ?? 'Unknown',
+          annotation: (row.annotation as string) ?? '',
+          definition: (row.definition_part as string) ?? '',
+          confidence: adjustConfidence(baseConfidence, score),
+          source: 'database' as const,
+        },
+        score,
+      };
+    })
+    .filter(({ score }) => score >= MIN_MATCH_SCORE)
+    .sort((a, b) => b.score - a.score)
+    .map(({ result }) => result);
 }
