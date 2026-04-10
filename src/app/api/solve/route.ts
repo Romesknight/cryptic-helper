@@ -181,7 +181,9 @@ export async function POST(request: NextRequest) {
     // Don't expose internal details
     const safeMessage = message.includes("API_KEY")
       ? "API configuration error. Please contact support."
-      : "Failed to analyze clue. Please try again.";
+      : message === "SAFETY_BLOCKED"
+        ? "This clue contains content that couldn't be processed. Try the Traditional solver instead."
+        : "Failed to analyze clue. Please try again.";
 
     return NextResponse.json(
       { error: safeMessage, code: "SOLVE_ERROR" },

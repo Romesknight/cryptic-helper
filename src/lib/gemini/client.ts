@@ -1,4 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import {
+  GoogleGenAI,
+  HarmBlockThreshold,
+  HarmCategory,
+  Type,
+} from "@google/genai";
 import type { SolveAnswerResponse, SolveResponse } from "@/types/api";
 import { isSolveResponse, VALID_CLUE_TYPE_SLUGS } from "@/types/api";
 import { buildUserPrompt, SYSTEM_PROMPT } from "../claude/prompts";
@@ -83,10 +88,41 @@ export async function solveClue(
       systemInstruction: SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema: mode === "answer" ? ANSWER_SCHEMA : HINT_SCHEMA,
+      // Cryptic crosswords legitimately reference drugs, weapons, violence, etc.
+      // as wordplay fodder — lower thresholds to avoid false positives.
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+      ],
     },
   });
 
-  const text = response.text;
+  // Detect safety filter block before accessing response text
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason === "SAFETY") {
+    throw new Error("SAFETY_BLOCKED");
+  }
+
+  let text: string | undefined;
+  try {
+    text = response.text;
+  } catch {
+    throw new Error("SAFETY_BLOCKED");
+  }
   if (!text) {
     throw new Error("No text response from Gemini");
   }
