@@ -47,7 +47,7 @@ const HINT_SCHEMA = {
  */
 function isValidSolveResponse(obj: unknown): obj is SolveResponse {
   if (!isSolveResponse(obj)) return false;
-  const o = obj as Record<string, unknown>;
+  const o = obj as unknown as Record<string, unknown>;
   return VALID_CLUE_TYPE_SLUGS.has(o.clueType as string);
 }
 

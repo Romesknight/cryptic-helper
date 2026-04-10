@@ -49,6 +49,16 @@ export const CLUE_TYPE_COLORS: Record<
     text: "text-slate-700",
     border: "border-slate-200",
   },
+  hybrid: {
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    border: "border-violet-200",
+  },
+  "and-lit": {
+    bg: "bg-teal-50",
+    text: "text-teal-700",
+    border: "border-teal-200",
+  },
 };
 
 export const CLUE_TYPE_SHORT_CODES: Record<ClueTypeName, string> = {
@@ -61,6 +71,8 @@ export const CLUE_TYPE_SHORT_CODES: Record<ClueTypeName, string> = {
   homophone: "HOM",
   deletion: "DEL",
   "cryptic-definition": "CD",
+  hybrid: "HYB",
+  "and-lit": "&LIT",
 };
 
 export const DIFFICULTY_LABELS: Record<number, string> = {

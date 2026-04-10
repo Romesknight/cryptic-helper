@@ -50,7 +50,7 @@ async function ensureLoaded(): Promise<void> {
  */
 export async function isWord(word: string): Promise<boolean> {
   await ensureLoaded();
-  return wordSet?.has(word.toLowerCase());
+  return wordSet?.has(word.toLowerCase()) ?? false;
 }
 
 /**
