@@ -183,7 +183,11 @@ export async function POST(request: NextRequest) {
       ? "API configuration error. Please contact support."
       : message === "SAFETY_BLOCKED"
         ? "This clue contains content that couldn't be processed. Try the Traditional solver instead."
-        : "Failed to analyze clue. Please try again.";
+        : message.includes("UNAVAILABLE") ||
+            message.includes("high demand") ||
+            message.includes("503")
+          ? "AI solver is temporarily overloaded. Please try again in a moment, or use the Traditional solver."
+          : "Failed to analyze clue. Please try again.";
 
     return NextResponse.json(
       { error: safeMessage, code: "SOLVE_ERROR" },

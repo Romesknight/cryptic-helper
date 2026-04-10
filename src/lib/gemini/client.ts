@@ -70,8 +70,11 @@ function getClient(): GoogleGenAI {
   return ai;
 }
 
+const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"] as const;
+
 /**
  * Send a cryptic crossword clue to Gemini for analysis.
+ * Tries gemini-2.5-flash first; falls back to gemini-2.0-flash on 503.
  */
 export async function solveClue(
   clue: string,
@@ -81,8 +84,35 @@ export async function solveClue(
   const client = getClient();
   const userPrompt = buildUserPrompt(clue, mode, letterPattern);
 
+  let lastError: unknown;
+  for (const model of MODELS) {
+    try {
+      return await callGemini(client, model, userPrompt, mode);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Only fall through to the next model on capacity/overload errors
+      if (
+        msg.includes("503") ||
+        msg.includes("UNAVAILABLE") ||
+        msg.includes("high demand")
+      ) {
+        lastError = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError ?? new Error("All Gemini models unavailable");
+}
+
+async function callGemini(
+  client: GoogleGenAI,
+  model: string,
+  userPrompt: string,
+  mode: "hint" | "answer"
+): Promise<SolveResponse> {
   const response = await client.models.generateContent({
-    model: "gemini-2.5-flash",
+    model,
     contents: userPrompt,
     config: {
       systemInstruction: SYSTEM_PROMPT,
