@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { isSolveResponse } from "@/types/api";
+import { isSolveResponse, type SolveResponse } from "@/types/api";
 import { buildUserPrompt, SYSTEM_PROMPT } from "./prompts";
 
 let client: Anthropic | null = null;
