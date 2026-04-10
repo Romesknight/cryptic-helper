@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | Cryptic Helper",
   },
   description:
-    "Get AI-powered hints and answers for cryptic crossword clues, with detailed annotations explaining the wordplay. Learn the 9 types of cryptic clue.",
+    "Get AI-powered hints and answers for cryptic crossword clues, with detailed annotations explaining the wordplay. Learn the 11 types of cryptic clue.",
   keywords: [
     "cryptic crossword",
     "crossword solver",

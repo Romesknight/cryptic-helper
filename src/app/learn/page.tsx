@@ -5,7 +5,7 @@ import { CLUE_EXAMPLES, CLUE_TYPES } from "@/data/clue-types";
 export const metadata: Metadata = {
   title: "Learn Cryptic Clue Types",
   description:
-    "Master the 9 types of cryptic crossword clue: anagrams, hidden words, double definitions, charades, containers, reversals, homophones, deletions, and cryptic definitions.",
+    "Master the 11 types of cryptic crossword clue: anagrams, hidden words, double definitions, charades, containers, reversals, homophones, deletions, cryptic definitions, hybrids, and &amp;lit clues.",
 };
 
 export default function LearnPage() {

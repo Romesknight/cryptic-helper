@@ -15,7 +15,7 @@ interface PageProps {
 }
 
 /**
- * Generate static paths for all 9 clue types.
+ * Generate static paths for all 11 clue types.
  */
 export function generateStaticParams() {
   return CLUE_TYPES.map((ct) => ({ clueType: ct.slug }));

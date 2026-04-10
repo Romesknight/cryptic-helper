@@ -46,7 +46,7 @@ function getOption(name: string, defaultValue: number): number {
 const TOTAL_LIMIT = getOption("limit", 2000);
 const LIMIT_PER_TYPE = Math.ceil(TOTAL_LIMIT / 8);
 
-// ── Clue type definitions (matching our app's 9 types) ──
+// ── Clue type definitions (matching our app's 11 types) ──
 
 const CLUE_TYPES = [
   { slug: "anagram", name: "Anagram" },

@@ -3,7 +3,7 @@ import { CLUE_TYPES } from "@/data/clue-types";
 
 /**
  * GET /api/clue-types
- * Returns all 9 clue types with their definitions and indicators.
+ * Returns all 11 clue types with their definitions and indicators.
  * Uses static data (no DB dependency) for fast, reliable responses.
  */
 export async function GET() {

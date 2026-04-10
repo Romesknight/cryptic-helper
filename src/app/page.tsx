@@ -24,7 +24,7 @@ export default function HomePage() {
             href="/learn"
             className="text-primary font-medium hover:underline"
           >
-            Learn about the 9 clue types
+            Learn about the 11 clue types
           </Link>
         </p>
       </section>
