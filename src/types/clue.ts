@@ -7,7 +7,9 @@ export type ClueTypeName =
   | "reversal"
   | "homophone"
   | "deletion"
-  | "cryptic-definition";
+  | "cryptic-definition"
+  | "hybrid"
+  | "and-lit";
 
 export interface ClueType {
   id: string;
