@@ -11,7 +11,7 @@
  *   - DISCARD: CSS/code artifacts, blog commentary, tiny fragments
  */
 
-import { normalizeText } from '../../src/lib/utils.js';
+import { normalizeText } from "../../src/lib/utils.js";
 
 export interface AnnotationEntry {
   answer: string;
@@ -61,33 +61,34 @@ const COMMENTARY_PATTERNS = [
 ];
 
 /** Trailing clue bleed — next clue entry leaked into this annotation. */
-const CLUE_BLEED_PATTERN = /\n?\s*\d+[ad]?\s+[A-Z][a-zA-Z\s,'()-]+\(\d+(?:[,-]\d+)*\)/;
+const CLUE_BLEED_PATTERN =
+  /\n?\s*\d+[ad]?\s+[A-Z][a-zA-Z\s,'()-]+\(\d+(?:[,-]\d+)*\)/;
 
 /** Alternate clue bleed — "14d  ANSWER – explanation" pattern from next entry. */
 const NEXT_ENTRY_PATTERN = /\n?\s*\d+[ad]?\s{2,}[A-Z]{2,}\s*[–—-]/;
 
 /** HTML entities that weren't decoded. */
 const HTML_ENTITY_MAP: Record<string, string> = {
-  '&#8230;': '...',
-  '&#8217;': "'",
-  '&#8216;': "'",
-  '&#8220;': '\u201c',
-  '&#8221;': '\u201d',
-  '&#8211;': '\u2013',
-  '&#8212;': '\u2014',
-  '&#039;': "'",
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&rsquo;': "'",
-  '&lsquo;': "'",
-  '&rdquo;': '\u201d',
-  '&ldquo;': '\u201c',
-  '&ndash;': '\u2013',
-  '&mdash;': '\u2014',
-  '&nbsp;': ' ',
-  '&#160;': ' ',
+  "&#8230;": "...",
+  "&#8217;": "'",
+  "&#8216;": "'",
+  "&#8220;": "\u201c",
+  "&#8221;": "\u201d",
+  "&#8211;": "\u2013",
+  "&#8212;": "\u2014",
+  "&#039;": "'",
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&rsquo;": "'",
+  "&lsquo;": "'",
+  "&rdquo;": "\u201d",
+  "&ldquo;": "\u201c",
+  "&ndash;": "\u2013",
+  "&mdash;": "\u2014",
+  "&nbsp;": " ",
+  "&#160;": " ",
 };
 
 // ── Fix functions ──
@@ -109,19 +110,19 @@ function fixHtmlEntities(text: string): string {
 function stripHtmlTags(text: string): string {
   // Only match valid HTML tags (tag names start with a letter).
   // Avoids breaking math notation like "3 < 5" or "A > B".
-  return text.replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?\s*>/g, '');
+  return text.replace(/<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s+[^>]*)?\s*>/g, "");
 }
 
 /** Remove trailing clue bleed (next clue entry appended to this one). */
 function fixTrailingClueBleed(text: string): string {
-  let result = text.replace(CLUE_BLEED_PATTERN, '');
-  result = result.replace(NEXT_ENTRY_PATTERN, '');
+  let result = text.replace(CLUE_BLEED_PATTERN, "");
+  result = result.replace(NEXT_ENTRY_PATTERN, "");
   return result.trim();
 }
 
 /** Strip leading punctuation fragments (e.g. starting with ": " or ", "). */
 function fixLeadingFragment(text: string): string {
-  return text.replace(/^[\s:,;.–—-]+/, '').trim();
+  return text.replace(/^[\s:,;.–—-]+/, "").trim();
 }
 
 // ── Discard checks ──
@@ -135,29 +136,29 @@ function checkForGarbage(annotation: string): DiscardResult {
   // CSS/code artifacts
   for (const pattern of CSS_CODE_PATTERNS) {
     if (pattern.test(annotation)) {
-      return { discarded: true, reason: 'css_code_artifact' };
+      return { discarded: true, reason: "css_code_artifact" };
     }
   }
 
   // Blog commentary
   for (const pattern of COMMENTARY_PATTERNS) {
     if (pattern.test(annotation)) {
-      return { discarded: true, reason: 'blog_commentary' };
+      return { discarded: true, reason: "blog_commentary" };
     }
   }
 
   // Too short to be useful (< 15 chars after cleanup)
   if (annotation.length < 15) {
-    return { discarded: true, reason: 'too_short' };
+    return { discarded: true, reason: "too_short" };
   }
 
   // Mostly non-alphanumeric (likely garbage)
   const alphaCount = (annotation.match(/[a-zA-Z]/g) || []).length;
   if (alphaCount / annotation.length < 0.4) {
-    return { discarded: true, reason: 'low_alpha_ratio' };
+    return { discarded: true, reason: "low_alpha_ratio" };
   }
 
-  return { discarded: false, reason: '' };
+  return { discarded: false, reason: "" };
 }
 
 // ── Main cleaner ──
@@ -181,7 +182,7 @@ export function cleanAnnotations(cache: AnnotationCache): {
   let discarded = 0;
   const discardReasons: Record<string, number> = {};
 
-  for (const [key, entry] of Object.entries(cache)) {
+  for (const [_key, entry] of Object.entries(cache)) {
     if (entry.cleaned) {
       alreadyClean++;
       continue;

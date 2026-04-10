@@ -14,19 +14,19 @@
  *   npx tsx scripts/scrape-annotations.ts --source bigdave44  # One source only
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
-import { normalizeText } from '../src/lib/utils.js';
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import { normalizeText } from "../src/lib/utils.js";
 
 // ── Paths ──
 
 const scriptDir = path.dirname(
-  new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')
+  new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")
 );
-const EIGENFOO_DB_PATH = path.join(scriptDir, 'data', 'cryptics.db');
-const LOCAL_DB_PATH = path.join(scriptDir, 'data', 'clues-local.db');
-const ANNOTATIONS_PATH = path.join(scriptDir, 'data', 'annotations.json');
+const EIGENFOO_DB_PATH = path.join(scriptDir, "data", "cryptics.db");
+const LOCAL_DB_PATH = path.join(scriptDir, "data", "clues-local.db");
+const ANNOTATIONS_PATH = path.join(scriptDir, "data", "annotations.json");
 
 // ── CLI args ──
 
@@ -46,12 +46,12 @@ function getNumberOption(name: string): number | null {
   const val = getStringOption(name);
   if (val === null) return null;
   const n = parseInt(val, 10);
-  return isNaN(n) ? null : n;
+  return Number.isNaN(n) ? null : n;
 }
 
-const RESUME = getFlag('resume');
-const PAGE_LIMIT = getNumberOption('limit');
-const SOURCE_FILTER = getStringOption('source');
+const RESUME = getFlag("resume");
+const PAGE_LIMIT = getNumberOption("limit");
+const SOURCE_FILTER = getStringOption("source");
 
 // ── Types ──
 
@@ -75,14 +75,15 @@ type AnnotationCache = Record<string, AnnotationEntry>;
 // ── Step 1: Build work list from eigenfoo DB ──
 
 function buildWorkList(): ClueInfo[] {
-  const dbPath = EIGENFOO_DB_PATH.startsWith('/') && process.platform === 'win32'
-    ? EIGENFOO_DB_PATH.slice(1)
-    : EIGENFOO_DB_PATH;
+  const dbPath =
+    EIGENFOO_DB_PATH.startsWith("/") && process.platform === "win32"
+      ? EIGENFOO_DB_PATH.slice(1)
+      : EIGENFOO_DB_PATH;
 
   if (!fs.existsSync(dbPath)) {
     console.error(`Eigenfoo database not found at: ${dbPath}`);
     console.error(
-      'Download it first:\n  curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db'
+      "Download it first:\n  curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db"
     );
     process.exit(1);
   }
@@ -90,7 +91,8 @@ function buildWorkList(): ClueInfo[] {
   const db = new Database(dbPath, { readonly: true });
 
   // Get all clues that have source URLs, answers, and definitions
-  const rows = db.prepare(`
+  const rows = db
+    .prepare(`
     SELECT
       c.clue,
       c.answer,
@@ -104,7 +106,8 @@ function buildWorkList(): ClueInfo[] {
       AND c.answer != ''
       AND c.definition IS NOT NULL
       AND c.definition != ''
-  `).all() as Array<{
+  `)
+    .all() as Array<{
     clue: string;
     answer: string;
     source_url: string;
@@ -118,7 +121,9 @@ function buildWorkList(): ClueInfo[] {
   const localClueTexts = new Set<string>();
   if (fs.existsSync(LOCAL_DB_PATH)) {
     const localDb = new Database(LOCAL_DB_PATH, { readonly: true });
-    const localRows = localDb.prepare('SELECT clue_text FROM clues').all() as Array<{ clue_text: string }>;
+    const localRows = localDb
+      .prepare("SELECT clue_text FROM clues")
+      .all() as Array<{ clue_text: string }>;
     for (const r of localRows) {
       localClueTexts.add(r.clue_text.toLowerCase());
     }
@@ -131,26 +136,31 @@ function buildWorkList(): ClueInfo[] {
     // Strip HTML, normalize typographic chars to ASCII, then strip enumeration
     const cleanClue = normalizeText(
       row.clue
-        .replace(/<[^>]*>/g, '')
-        .normalize('NFC')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .replace(/<[^>]*>/g, "")
+        .normalize("NFC")
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strips raw control chars
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
         .trim()
     )
-      .replace(/\s*\(\d+(?:[,-]\d+)*\)\s*$/, '')
+      .replace(/\s*\(\d+(?:[,-]\d+)*\)\s*$/, "")
       .trim();
 
     const cleanAnswer = normalizeText(
       row.answer
-        .replace(/<[^>]*>/g, '')
-        .normalize('NFC')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .replace(/<[^>]*>/g, "")
+        .normalize("NFC")
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strips raw control chars
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
         .trim()
     )
       .toUpperCase()
-      .replace(/[^A-Z]/g, '');
+      .replace(/[^A-Z]/g, "");
 
     // Only include clues that exist in our local DB (if it exists)
-    if (localClueTexts.size > 0 && !localClueTexts.has(cleanClue.toLowerCase())) {
+    if (
+      localClueTexts.size > 0 &&
+      !localClueTexts.has(cleanClue.toLowerCase())
+    ) {
       continue;
     }
 
@@ -158,12 +168,13 @@ function buildWorkList(): ClueInfo[] {
       clue_text: cleanClue,
       answer: cleanAnswer,
       source_url: row.source_url.trim(),
-      source: (row.source || '').trim(),
+      source: (row.source || "").trim(),
       definition: normalizeText(
         row.definition
-          .replace(/<[^>]*>/g, '')
-          .normalize('NFC')
-          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+          .replace(/<[^>]*>/g, "")
+          .normalize("NFC")
+          // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional — strips raw control chars
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
           .trim()
       ),
     });
@@ -183,8 +194,8 @@ async function fetchPage(url: string, retries = 3): Promise<string | null> {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'CrypticHelper/1.0 (educational crossword research)',
-          'Accept': 'text/html,application/xhtml+xml',
+          "User-Agent": "CrypticHelper/1.0 (educational crossword research)",
+          Accept: "text/html,application/xhtml+xml",
         },
       });
 
@@ -198,8 +209,10 @@ async function fetchPage(url: string, retries = 3): Promise<string | null> {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (attempt < retries) {
-        const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
-        console.log(`    Retry ${attempt}/${retries} for ${url}: ${msg} (waiting ${delay}ms)`);
+        const delay = 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s
+        console.log(
+          `    Retry ${attempt}/${retries} for ${url}: ${msg} (waiting ${delay}ms)`
+        );
         await sleep(delay);
       } else {
         console.log(`    FAILED after ${retries} attempts: ${url}: ${msg}`);
@@ -220,13 +233,14 @@ function sleep(ms: number): Promise<void> {
  * Classify a source URL into a known blog source.
  */
 function classifySource(url: string): string {
-  if (url.includes('bigdave44')) return 'bigdave44';
-  if (url.includes('fifteensquared')) return 'fifteensquared';
-  if (url.includes('times-xwd-times') || url.includes('timesforthetimes')) return 'times_xwd_times';
-  if (url.includes('thehinducrosswordcorner')) return 'thehinducrosswordcorner';
-  if (url.includes('natpostcryptic')) return 'natpostcryptic';
-  if (url.includes('newyorker')) return 'newyorker';
-  return 'unknown';
+  if (url.includes("bigdave44")) return "bigdave44";
+  if (url.includes("fifteensquared")) return "fifteensquared";
+  if (url.includes("times-xwd-times") || url.includes("timesforthetimes"))
+    return "times_xwd_times";
+  if (url.includes("thehinducrosswordcorner")) return "thehinducrosswordcorner";
+  if (url.includes("natpostcryptic")) return "natpostcryptic";
+  if (url.includes("newyorker")) return "newyorker";
+  return "unknown";
 }
 
 /**
@@ -234,32 +248,32 @@ function classifySource(url: string): string {
  */
 function stripHtml(html: string): string {
   return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#8217;/g, "'")
     .replace(/&#8216;/g, "'")
-    .replace(/&#8211;/g, '–')
-    .replace(/&#8212;/g, '—')
+    .replace(/&#8211;/g, "–")
+    .replace(/&#8212;/g, "—")
     .replace(/&#8220;/g, '"')
     .replace(/&#8221;/g, '"')
     .replace(/&rsquo;/g, "'")
     .replace(/&lsquo;/g, "'")
-    .replace(/&ndash;/g, '–')
-    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—")
     .replace(/&ldquo;/g, '"')
     .replace(/&rdquo;/g, '"')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#160;/g, ' ')
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#160;/g, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -281,13 +295,13 @@ function parseBigdave44(html: string, answer: string): string | null {
   const htmlPatterns = [
     // Bold answer followed by dash
     new RegExp(
-      `<(?:strong|b)[^>]*>\\s*${answerEsc}\\s*<\/(?:strong|b)>\\s*[–—-]\\s*(.+?)(?=<(?:strong|b)[^>]*>\\s*[A-Z]{2,}|<\/(?:div|article|section)>|$)`,
-      'is'
+      `<(?:strong|b)[^>]*>\\s*${answerEsc}\\s*</(?:strong|b)>\\s*[–—-]\\s*(.+?)(?=<(?:strong|b)[^>]*>\\s*[A-Z]{2,}|</(?:div|article|section)>|$)`,
+      "is"
     ),
     // Answer in caps (not necessarily bold) followed by dash
     new RegExp(
-      `(?:^|\\n|<p[^>]*>|<br\\s*\\/?>)\\s*\\d*[a-z]*\\.?\\s*${answerEsc}\\s*[–—-]\\s*(.+?)(?=(?:^|\\n|<p[^>]*>|<br\\s*\\/?>)\\s*\\d*[a-z]*\\.?\\s*[A-Z]{2,}\\s*[–—-]|<\/(?:div|article|section)>|$)`,
-      'is'
+      `(?:^|\\n|<p[^>]*>|<br\\s*\\/?>)\\s*\\d*[a-z]*\\.?\\s*${answerEsc}\\s*[–—-]\\s*(.+?)(?=(?:^|\\n|<p[^>]*>|<br\\s*\\/?>)\\s*\\d*[a-z]*\\.?\\s*[A-Z]{2,}\\s*[–—-]|</(?:div|article|section)>|$)`,
+      "is"
     ),
   ];
 
@@ -319,8 +333,8 @@ function parseFifteensquared(html: string, answer: string): string | null {
   const htmlPatterns = [
     // Answer in bold/strong followed by explanation
     new RegExp(
-      `<(?:strong|b)[^>]*>[^<]*${answerEsc}[^<]*<\/(?:strong|b)>\\s*(?:<[^>]*>\\s*)*(.+?)(?=<(?:strong|b)[^>]*>\\s*\\d|<\/(?:div|article|section)>|$)`,
-      'is'
+      `<(?:strong|b)[^>]*>[^<]*${answerEsc}[^<]*</(?:strong|b)>\\s*(?:<[^>]*>\\s*)*(.+?)(?=<(?:strong|b)[^>]*>\\s*\\d|</(?:div|article|section)>|$)`,
+      "is"
     ),
   ];
 
@@ -329,7 +343,9 @@ function parseFifteensquared(html: string, answer: string): string | null {
     if (match?.[1]) {
       const cleaned = stripHtml(match[1]).trim();
       // Take just the first meaningful paragraph as the annotation
-      const paragraphs = cleaned.split(/\n\n+/).filter((p) => p.trim().length > 10);
+      const paragraphs = cleaned
+        .split(/\n\n+/)
+        .filter((p) => p.trim().length > 10);
       if (paragraphs.length > 0) {
         const annotation = paragraphs[0].trim();
         if (annotation.length >= 10 && annotation.length <= 500) {
@@ -354,7 +370,7 @@ function parseFromPlainText(text: string, answer: string): string | null {
   // Look for ANSWER followed by a dash and explanation
   const dashPattern = new RegExp(
     `${answerEsc}\\s*[–—-]\\s*(.+?)(?=\\n\\s*[A-Z]{2,}\\s*[–—-]|\\n\\n|$)`,
-    'i'
+    "i"
   );
   const dashMatch = text.match(dashPattern);
   if (dashMatch?.[1]) {
@@ -365,13 +381,16 @@ function parseFromPlainText(text: string, answer: string): string | null {
   }
 
   // Look for answer word in caps, grab the line and next few lines as context
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     // Check if this line contains the answer prominently
-    if (new RegExp(`\\b${answerEsc}\\b`, 'i').test(line)) {
+    if (new RegExp(`\\b${answerEsc}\\b`, "i").test(line)) {
       // Check it's not just a bare answer - should have some explanation
-      const afterAnswer = line.replace(new RegExp(`.*?\\b${answerEsc}\\b\\s*[–—-]?\\s*`, 'i'), '');
+      const afterAnswer = line.replace(
+        new RegExp(`.*?\\b${answerEsc}\\b\\s*[–—-]?\\s*`, "i"),
+        ""
+      );
       if (afterAnswer.length >= 10) {
         // Grab this line plus up to 2 more non-empty lines for context
         const contextLines = [afterAnswer];
@@ -383,7 +402,7 @@ function parseFromPlainText(text: string, answer: string): string | null {
           if (/^\d+[a-z]?\s+[A-Z]{2,}/.test(nextLine)) break;
           contextLines.push(nextLine);
         }
-        const result = contextLines.join(' ').trim();
+        const result = contextLines.join(" ").trim();
         if (result.length >= 10 && result.length <= 500) {
           return result;
         }
@@ -395,20 +414,24 @@ function parseFromPlainText(text: string, answer: string): string | null {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
  * Extract annotation for a clue from page HTML, dispatching to
  * the appropriate parser based on source type.
  */
-function extractAnnotation(html: string, answer: string, sourceType: string): string | null {
+function extractAnnotation(
+  html: string,
+  answer: string,
+  sourceType: string
+): string | null {
   switch (sourceType) {
-    case 'bigdave44':
+    case "bigdave44":
       return parseBigdave44(html, answer);
-    case 'fifteensquared':
+    case "fifteensquared":
       return parseFifteensquared(html, answer);
-    case 'times_xwd_times':
+    case "times_xwd_times":
       return parseFifteensquared(html, answer); // Similar format
     default:
       // Generic fallback for thehinducrosswordcorner, natpostcryptic, etc.
@@ -419,10 +442,10 @@ function extractAnnotation(html: string, answer: string, sourceType: string): st
 // ── Step 4: Main orchestration ──
 
 async function main() {
-  console.log('\n=== Scrape Annotations from Source Pages ===\n');
+  console.log("\n=== Scrape Annotations from Source Pages ===\n");
 
   // Build work list
-  console.log('Building work list from eigenfoo database...');
+  console.log("Building work list from eigenfoo database...");
   const allClues = buildWorkList();
   console.log(`Found ${allClues.length} clues with source URLs`);
 
@@ -432,7 +455,9 @@ async function main() {
     : allClues;
 
   if (SOURCE_FILTER) {
-    console.log(`Filtered to ${clues.length} clues from source: ${SOURCE_FILTER}`);
+    console.log(
+      `Filtered to ${clues.length} clues from source: ${SOURCE_FILTER}`
+    );
   }
 
   // Group clues by source_url
@@ -452,17 +477,21 @@ async function main() {
     const src = classifySource(clue.source_url);
     sourceCounts.set(src, (sourceCounts.get(src) ?? 0) + 1);
   }
-  console.log('Source distribution:');
-  for (const [src, count] of [...sourceCounts.entries()].sort((a, b) => b[1] - a[1])) {
+  console.log("Source distribution:");
+  for (const [src, count] of [...sourceCounts.entries()].sort(
+    (a, b) => b[1] - a[1]
+  )) {
     console.log(`  ${src}: ${count} clues`);
   }
-  console.log('');
+  console.log("");
 
   // Load existing cache if resuming
   let cache: AnnotationCache = {};
   if (RESUME && fs.existsSync(ANNOTATIONS_PATH)) {
-    cache = JSON.parse(fs.readFileSync(ANNOTATIONS_PATH, 'utf-8'));
-    console.log(`Loaded ${Object.keys(cache).length} existing annotations from cache`);
+    cache = JSON.parse(fs.readFileSync(ANNOTATIONS_PATH, "utf-8"));
+    console.log(
+      `Loaded ${Object.keys(cache).length} existing annotations from cache`
+    );
   }
 
   // Determine which pages to scrape
@@ -488,7 +517,9 @@ async function main() {
   }
 
   // Apply page limit
-  const limitedPages = PAGE_LIMIT ? pagesToScrape.slice(0, PAGE_LIMIT) : pagesToScrape;
+  const limitedPages = PAGE_LIMIT
+    ? pagesToScrape.slice(0, PAGE_LIMIT)
+    : pagesToScrape;
   console.log(`Will scrape ${limitedPages.length} pages...\n`);
 
   // Scrape pages
@@ -502,14 +533,16 @@ async function main() {
     const sourceType = classifySource(url);
     const progress = `[${pagesProcessed}/${limitedPages.length}]`;
 
-    process.stdout.write(`${progress} Fetching ${sourceType}: ${url.slice(0, 80)}...`);
+    process.stdout.write(
+      `${progress} Fetching ${sourceType}: ${url.slice(0, 80)}...`
+    );
 
     const html = await fetchPage(url);
 
     if (!html) {
       fetchErrors++;
-      console.log(' FETCH FAILED');
-      for (const clue of pageClueList) {
+      console.log(" FETCH FAILED");
+      for (const _clue of pageClueList) {
         cluesFailed++;
       }
     } else {
@@ -553,7 +586,9 @@ async function main() {
     // Save cache periodically (every 50 pages) for crash resilience
     if (pagesProcessed % 50 === 0) {
       fs.writeFileSync(ANNOTATIONS_PATH, JSON.stringify(cache, null, 2));
-      console.log(`  [checkpoint] Saved ${Object.keys(cache).length} annotations\n`);
+      console.log(
+        `  [checkpoint] Saved ${Object.keys(cache).length} annotations\n`
+      );
     }
   }
 
@@ -561,7 +596,7 @@ async function main() {
   fs.writeFileSync(ANNOTATIONS_PATH, JSON.stringify(cache, null, 2));
 
   // Report
-  console.log('\n=== Scrape Complete ===');
+  console.log("\n=== Scrape Complete ===");
   console.log(`Pages processed: ${pagesProcessed}`);
   console.log(`Fetch errors: ${fetchErrors}`);
   console.log(`Clues annotated: ${cluesAnnotated}`);
@@ -571,6 +606,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  console.error("Fatal error:", err);
   process.exit(1);
 });

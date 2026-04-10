@@ -1,28 +1,31 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkRateLimit } from './rate-limit';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { checkRateLimit } from "./rate-limit";
 
-describe('checkRateLimit', () => {
+describe("checkRateLimit", () => {
   beforeEach(() => {
-    // Reset the internal store by calling with fresh IPs per test
     vi.useFakeTimers();
   });
 
-  it('allows first request', () => {
-    const result = checkRateLimit('test-ip-1');
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("allows first request", () => {
+    const result = checkRateLimit("test-ip-1");
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(19);
   });
 
-  it('allows up to 20 requests per minute', () => {
-    const ip = 'test-ip-2';
+  it("allows up to 20 requests per minute", () => {
+    const ip = "test-ip-2";
     for (let i = 0; i < 20; i++) {
       const result = checkRateLimit(ip);
       expect(result.allowed).toBe(true);
     }
   });
 
-  it('blocks the 21st request', () => {
-    const ip = 'test-ip-3';
+  it("blocks the 21st request", () => {
+    const ip = "test-ip-3";
     for (let i = 0; i < 20; i++) {
       checkRateLimit(ip);
     }
@@ -31,8 +34,8 @@ describe('checkRateLimit', () => {
     expect(result.retryAfter).toBeGreaterThan(0);
   });
 
-  it('resets after the window expires', () => {
-    const ip = 'test-ip-4';
+  it("resets after the window expires", () => {
+    const ip = "test-ip-4";
     for (let i = 0; i < 20; i++) {
       checkRateLimit(ip);
     }

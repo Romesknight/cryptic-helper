@@ -1,4 +1,4 @@
-import { RATE_LIMIT } from './constants';
+import { RATE_LIMIT } from "./constants";
 
 interface RateLimitEntry {
   count: number;
@@ -7,7 +7,10 @@ interface RateLimitEntry {
 
 // Note: This in-memory rate limiter is safe for single-process Node.js
 // (no async operations between read and write). In serverless/multi-process
-// deployments, use Redis or a shared store instead.
+// deployments (e.g. Vercel with multiple function instances), each instance
+// has its own store, so effective rate is limit × instance count.
+// For production enforcement, replace with a shared store such as
+// Upstash Redis + @upstash/ratelimit.
 const store = new Map<string, RateLimitEntry>();
 
 /**

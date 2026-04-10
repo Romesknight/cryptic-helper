@@ -40,46 +40,46 @@ export interface EigenfooRawRow {
  * Each column in indicators_by_clue contains the indicator word (or empty string).
  */
 export type EigenfooIndicatorType =
-  | 'anagram'
-  | 'hidden'
-  | 'reversal'
-  | 'container'
-  | 'insertion'
-  | 'homophone'
-  | 'deletion'
-  | 'alternation';
+  | "anagram"
+  | "hidden"
+  | "reversal"
+  | "container"
+  | "insertion"
+  | "homophone"
+  | "deletion"
+  | "alternation";
 
 /** All indicator columns, used for iteration. */
 export const INDICATOR_COLUMNS: EigenfooIndicatorType[] = [
-  'anagram',
-  'hidden',
-  'reversal',
-  'container',
-  'insertion',
-  'homophone',
-  'deletion',
-  'alternation',
+  "anagram",
+  "hidden",
+  "reversal",
+  "container",
+  "insertion",
+  "homophone",
+  "deletion",
+  "alternation",
 ];
 
 /** Our app's clue type slugs. */
 export type ClueTypeSlug =
-  | 'anagram'
-  | 'hidden-word'
-  | 'reversal'
-  | 'container'
-  | 'homophone'
-  | 'deletion';
+  | "anagram"
+  | "hidden-word"
+  | "reversal"
+  | "container"
+  | "homophone"
+  | "deletion";
 
 /** Mapping from eigenfoo indicator_type to our slug. */
 export const INDICATOR_TYPE_MAP: Record<EigenfooIndicatorType, ClueTypeSlug> = {
-  anagram: 'anagram',
-  hidden: 'hidden-word',
-  reversal: 'reversal',
-  container: 'container',
-  insertion: 'container',
-  homophone: 'homophone',
-  deletion: 'deletion',
-  alternation: 'deletion',
+  anagram: "anagram",
+  hidden: "hidden-word",
+  reversal: "reversal",
+  container: "container",
+  insertion: "container",
+  homophone: "homophone",
+  deletion: "deletion",
+  alternation: "deletion",
 };
 
 /** A clue ready for Supabase insertion. */

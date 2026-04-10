@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { CLUE_TYPES } from '@/data/clue-types';
+import { NextResponse } from "next/server";
+import { CLUE_TYPES } from "@/data/clue-types";
 
 /**
  * GET /api/clue-types

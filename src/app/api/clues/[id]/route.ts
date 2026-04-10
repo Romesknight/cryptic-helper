@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { CLUE_EXAMPLES } from '@/data/clue-types';
+import { type NextRequest, NextResponse } from "next/server";
+import { CLUE_EXAMPLES } from "@/data/clue-types";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   if (!clue) {
     return NextResponse.json(
-      { error: 'Clue not found', code: 'NOT_FOUND' },
+      { error: "Clue not found", code: "NOT_FOUND" },
       { status: 404 }
     );
   }

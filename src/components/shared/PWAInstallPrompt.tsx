@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import Button from '@/components/ui/Button';
+import { useCallback, useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 /**
@@ -19,7 +19,7 @@ export default function PWAInstallPrompt() {
 
   useEffect(() => {
     // Check if already dismissed
-    const wasDismissed = localStorage.getItem('pwa-dismissed') === 'true';
+    const wasDismissed = localStorage.getItem("pwa-dismissed") === "true";
     if (wasDismissed) return;
 
     setDismissed(false);
@@ -29,27 +29,28 @@ export default function PWAInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
+    if (outcome === "accepted") {
       setDeferredPrompt(null);
     }
   }, [deferredPrompt]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
-    localStorage.setItem('pwa-dismissed', 'true');
+    localStorage.setItem("pwa-dismissed", "true");
   }, []);
 
   if (dismissed || !deferredPrompt) return null;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: install prompt at bottom of screen, not a page header
     <div
       role="banner"
       className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md rounded-xl border border-border bg-card p-4 shadow-lg sm:left-auto sm:right-4"

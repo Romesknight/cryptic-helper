@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -28,7 +28,7 @@ export default function Footer() {
           </nav>
         </div>
         <p className="mt-3 text-center text-xs text-muted/70">
-          Crossword clue data sourced from the{' '}
+          Crossword clue data sourced from the{" "}
           <a
             href="https://cryptics.georgeho.org"
             target="_blank"
@@ -37,7 +37,7 @@ export default function Footer() {
           >
             Cryptics Dataset
           </a>
-          , made available under the{' '}
+          , made available under the{" "}
           <a
             href="https://opendatacommons.org/licenses/odbl/1-0/"
             target="_blank"
@@ -46,7 +46,8 @@ export default function Footer() {
           >
             Open Database License (ODbL)
           </a>
-          . Individual clues are the work of their respective setters and publishers.
+          . Individual clues are the work of their respective setters and
+          publishers.
         </p>
       </div>
     </footer>

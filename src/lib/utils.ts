@@ -1,4 +1,4 @@
-import { type ClassValue, clsx } from 'clsx';
+import { type ClassValue, clsx } from "clsx";
 
 /**
  * Merge class names, filtering out falsy values.
@@ -14,8 +14,8 @@ export function cn(...inputs: ClassValue[]): string {
  */
 export function formatLetterPattern(pattern: string): string {
   const trimmed = pattern.trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('(') && trimmed.endsWith(')')) return trimmed;
+  if (!trimmed) return "";
+  if (trimmed.startsWith("(") && trimmed.endsWith(")")) return trimmed;
   return `(${trimmed})`;
 }
 
@@ -24,7 +24,7 @@ export function formatLetterPattern(pattern: string): string {
  * Accepts patterns like "7", "4,3", "(7)", "(4,3)", "4-3", etc.
  */
 export function isValidLetterPattern(pattern: string): boolean {
-  const trimmed = pattern.trim().replace(/^\(|\)$/g, '');
+  const trimmed = pattern.trim().replace(/^\(|\)$/g, "");
   return /^[\d,\s-]+$/.test(trimmed);
 }
 
@@ -34,8 +34,8 @@ export function isValidLetterPattern(pattern: string): boolean {
 export function slugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**
@@ -50,22 +50,25 @@ export function slugify(text: string): string {
  * query time (before searching the DB).
  */
 export function normalizeText(text: string): string {
-  return text
-    // Smart/curly single quotes → straight apostrophe
-    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
-    // Smart/curly double quotes → straight double quote
-    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-    // Em dash, en dash, figure dash, horizontal bar → hyphen
-    .replace(/[\u2013\u2014\u2015\u2012]/g, '-')
-    // Ellipsis → three dots
-    .replace(/\u2026/g, '...')
-    // Non-breaking space, thin space, hair space, etc. → regular space
-    .replace(/[\u00A0\u2009\u200A\u202F\u205F]/g, ' ')
-    // Zero-width characters (joiners, non-joiners, soft hyphens)
-    .replace(/[\u200B\u200C\u200D\u00AD\uFEFF]/g, '')
-    // Ligatures
-    .replace(/\uFB01/g, 'fi')
-    .replace(/\uFB02/g, 'fl')
-    // Collapse multiple spaces
-    .replace(/ {2,}/g, ' ');
+  return (
+    text
+      // Smart/curly single quotes → straight apostrophe
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+      // Smart/curly double quotes → straight double quote
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+      // Em dash, en dash, figure dash, horizontal bar → hyphen
+      .replace(/[\u2013\u2014\u2015\u2012]/g, "-")
+      // Ellipsis → three dots
+      .replace(/\u2026/g, "...")
+      // Non-breaking space, thin space, hair space, etc. → regular space
+      .replace(/[\u00A0\u2009\u200A\u202F\u205F]/g, " ")
+      // Zero-width characters (joiners, non-joiners, soft hyphens)
+      // biome-ignore lint/suspicious/noMisleadingCharacterClass: intentional — strips zero-width chars
+      .replace(/[\u200B\u200C\u200D\u00AD\uFEFF]/g, "")
+      // Ligatures
+      .replace(/\uFB01/g, "fi")
+      .replace(/\uFB02/g, "fl")
+      // Collapse multiple spaces
+      .replace(/ {2,}/g, " ")
+  );
 }

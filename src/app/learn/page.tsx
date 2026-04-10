@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
-import { CLUE_TYPES, CLUE_EXAMPLES } from '@/data/clue-types';
-import ClueTypeCard from '@/components/learn/ClueTypeCard';
+import type { Metadata } from "next";
+import ClueTypeCard from "@/components/learn/ClueTypeCard";
+import { CLUE_EXAMPLES, CLUE_TYPES } from "@/data/clue-types";
 
 export const metadata: Metadata = {
-  title: 'Learn Cryptic Clue Types',
+  title: "Learn Cryptic Clue Types",
   description:
-    'Master the 9 types of cryptic crossword clue: anagrams, hidden words, double definitions, charades, containers, reversals, homophones, deletions, and cryptic definitions.',
+    "Master the 9 types of cryptic crossword clue: anagrams, hidden words, double definitions, charades, containers, reversals, homophones, deletions, and cryptic definitions.",
 };
 
 export default function LearnPage() {

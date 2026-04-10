@@ -1,21 +1,21 @@
-import { cn } from '@/lib/utils';
-import { HTMLAttributes, forwardRef } from 'react';
+import { forwardRef, type HTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  padding?: 'sm' | 'md' | 'lg';
+  padding?: "sm" | "md" | "lg";
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, padding = 'md', ...props }, ref) => {
+  ({ className, padding = "md", ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          'rounded-xl border border-border bg-card shadow-sm',
+          "rounded-xl border border-border bg-card shadow-sm",
           {
-            'p-3': padding === 'sm',
-            'p-5': padding === 'md',
-            'p-7': padding === 'lg',
+            "p-3": padding === "sm",
+            "p-5": padding === "md",
+            "p-7": padding === "lg",
           },
           className
         )}
@@ -25,5 +25,5 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-Card.displayName = 'Card';
+Card.displayName = "Card";
 export default Card;

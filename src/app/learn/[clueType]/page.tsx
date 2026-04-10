@@ -1,10 +1,14 @@
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { CLUE_TYPES, getClueTypeBySlug, getExamplesForType } from '@/data/clue-types';
-import ClueTypeBadge from '@/components/shared/ClueTypeBadge';
-import ExampleClue from '@/components/learn/ExampleClue';
-import ClueTypeNav from '@/components/learn/ClueTypeNav';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import ClueTypeNav from "@/components/learn/ClueTypeNav";
+import ExampleClue from "@/components/learn/ExampleClue";
+import ClueTypeBadge from "@/components/shared/ClueTypeBadge";
+import {
+  CLUE_TYPES,
+  getClueTypeBySlug,
+  getExamplesForType,
+} from "@/data/clue-types";
 
 interface PageProps {
   params: Promise<{ clueType: string }>;
@@ -20,12 +24,14 @@ export function generateStaticParams() {
 /**
  * Generate metadata for each clue type page.
  */
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { clueType: slug } = await params;
   const clueType = getClueTypeBySlug(slug);
 
   if (!clueType) {
-    return { title: 'Clue Type Not Found' };
+    return { title: "Clue Type Not Found" };
   }
 
   return {
@@ -47,7 +53,8 @@ export default async function ClueTypeDetailPage({ params }: PageProps) {
   // Find prev/next clue types for navigation
   const currentIndex = CLUE_TYPES.findIndex((ct) => ct.slug === slug);
   const prev = currentIndex > 0 ? CLUE_TYPES[currentIndex - 1] : null;
-  const next = currentIndex < CLUE_TYPES.length - 1 ? CLUE_TYPES[currentIndex + 1] : null;
+  const next =
+    currentIndex < CLUE_TYPES.length - 1 ? CLUE_TYPES[currentIndex + 1] : null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -65,7 +72,10 @@ export default async function ClueTypeDetailPage({ params }: PageProps) {
           <nav aria-label="Breadcrumb" className="mb-4">
             <ol className="flex items-center gap-2 text-sm text-muted">
               <li>
-                <Link href="/learn" className="hover:text-foreground transition-colors">
+                <Link
+                  href="/learn"
+                  className="hover:text-foreground transition-colors"
+                >
                   Learn
                 </Link>
               </li>
@@ -77,7 +87,9 @@ export default async function ClueTypeDetailPage({ params }: PageProps) {
           <header className="mb-6">
             <div className="flex items-center gap-3 mb-3">
               <ClueTypeBadge slug={clueType.slug} label={clueType.shortCode} />
-              <h1 className="text-2xl font-bold sm:text-3xl">{clueType.name}</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">
+                {clueType.name}
+              </h1>
             </div>
             <p className="text-lg text-muted leading-relaxed">
               {clueType.description}
@@ -120,14 +132,28 @@ export default async function ClueTypeDetailPage({ params }: PageProps) {
           )}
 
           {/* Prev/Next navigation */}
-          <nav aria-label="Previous and next clue types" className="flex justify-between border-t border-border pt-6">
+          <nav
+            aria-label="Previous and next clue types"
+            className="flex justify-between border-t border-border pt-6"
+          >
             {prev ? (
               <Link
                 href={`/learn/${prev.slug}`}
                 className="text-sm text-muted hover:text-foreground transition-colors flex items-center gap-1"
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
                 {prev.name}
               </Link>
@@ -140,8 +166,19 @@ export default async function ClueTypeDetailPage({ params }: PageProps) {
                 className="text-sm text-muted hover:text-foreground transition-colors flex items-center gap-1"
               >
                 {next.name}
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </Link>
             ) : (

@@ -1,5 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from './types';
+import { createBrowserClient } from "@supabase/ssr";
+import type { Database } from "./types";
 
 /**
  * Create a Supabase client for use in browser components.
@@ -10,7 +10,7 @@ export function createClient() {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
-      'Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+      "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
     );
   }
 

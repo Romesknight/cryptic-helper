@@ -13,22 +13,25 @@
  *   npx tsx scripts/build-local-db.ts --limit 500
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
-import { readEigenfooClues } from './lib/eigenfoo-reader.js';
-import { transformRow } from './lib/transformers.js';
-import { cleanAnnotations, normalizeCacheKeys } from './lib/annotation-cleaner.js';
-import type { AnnotationCache } from './lib/annotation-cleaner.js';
-import type { TransformedClue } from './lib/types.js';
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import type { AnnotationCache } from "./lib/annotation-cleaner.js";
+import {
+  cleanAnnotations,
+  normalizeCacheKeys,
+} from "./lib/annotation-cleaner.js";
+import { readEigenfooClues } from "./lib/eigenfoo-reader.js";
+import { transformRow } from "./lib/transformers.js";
+import type { TransformedClue } from "./lib/types.js";
 
 // ── Paths ──
 
 const scriptDir = path.dirname(
-  new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')
+  new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")
 );
-const OUTPUT_PATH = path.join(scriptDir, 'data', 'clues-local.db');
-const ANNOTATIONS_PATH = path.join(scriptDir, 'data', 'annotations.json');
+const OUTPUT_PATH = path.join(scriptDir, "data", "clues-local.db");
+const ANNOTATIONS_PATH = path.join(scriptDir, "data", "annotations.json");
 
 // ── CLI args ──
 
@@ -37,24 +40,24 @@ function getOption(name: string, defaultValue: number): number {
   const idx = args.indexOf(`--${name}`);
   if (idx === -1 || idx + 1 >= args.length) return defaultValue;
   const val = parseInt(args[idx + 1], 10);
-  return isNaN(val) ? defaultValue : val;
+  return Number.isNaN(val) ? defaultValue : val;
 }
 
-const TOTAL_LIMIT = getOption('limit', 2000);
+const TOTAL_LIMIT = getOption("limit", 2000);
 const LIMIT_PER_TYPE = Math.ceil(TOTAL_LIMIT / 8);
 
 // ── Clue type definitions (matching our app's 9 types) ──
 
 const CLUE_TYPES = [
-  { slug: 'anagram', name: 'Anagram' },
-  { slug: 'hidden-word', name: 'Hidden Word' },
-  { slug: 'double-definition', name: 'Double Definition' },
-  { slug: 'charade', name: 'Charade' },
-  { slug: 'container', name: 'Container' },
-  { slug: 'reversal', name: 'Reversal' },
-  { slug: 'homophone', name: 'Homophone' },
-  { slug: 'deletion', name: 'Deletion' },
-  { slug: 'cryptic-definition', name: 'Cryptic Definition' },
+  { slug: "anagram", name: "Anagram" },
+  { slug: "hidden-word", name: "Hidden Word" },
+  { slug: "double-definition", name: "Double Definition" },
+  { slug: "charade", name: "Charade" },
+  { slug: "container", name: "Container" },
+  { slug: "reversal", name: "Reversal" },
+  { slug: "homophone", name: "Homophone" },
+  { slug: "deletion", name: "Deletion" },
+  { slug: "cryptic-definition", name: "Cryptic Definition" },
 ] as const;
 
 // ── Main ──
@@ -67,15 +70,15 @@ function main() {
   // Remove existing DB if present
   if (fs.existsSync(OUTPUT_PATH)) {
     fs.unlinkSync(OUTPUT_PATH);
-    console.log('Removed existing clues-local.db');
+    console.log("Removed existing clues-local.db");
   }
 
   // 1. Read and transform clues from eigenfoo
-  console.log('Reading eigenfoo database...');
+  console.log("Reading eigenfoo database...");
   const rawRows = readEigenfooClues(LIMIT_PER_TYPE);
   console.log(`Read ${rawRows.length} raw rows\n`);
 
-  console.log('Transforming clues...');
+  console.log("Transforming clues...");
   const transformed: TransformedClue[] = [];
   let failures = 0;
 
@@ -85,6 +88,7 @@ function main() {
       failures++;
       continue;
     }
+    // biome-ignore lint/style/noNonNullAssertion: clue is guaranteed non-null when result has no error
     transformed.push(result.clue!);
   }
 
@@ -100,14 +104,18 @@ function main() {
 
   const toInsert = unique.slice(0, TOTAL_LIMIT);
   console.log(`Transformed: ${transformed.length} valid, ${failures} failures`);
-  console.log(`After dedup: ${unique.length} unique, inserting ${toInsert.length}\n`);
+  console.log(
+    `After dedup: ${unique.length} unique, inserting ${toInsert.length}\n`
+  );
 
   // 1b. Apply scraped annotations from cache (if available)
   let annotationsApplied = 0;
   let annotationsDiscarded = 0;
   if (fs.existsSync(ANNOTATIONS_PATH)) {
-    console.log('Loading scraped annotations cache...');
-    let cache: AnnotationCache = JSON.parse(fs.readFileSync(ANNOTATIONS_PATH, 'utf-8'));
+    console.log("Loading scraped annotations cache...");
+    let cache: AnnotationCache = JSON.parse(
+      fs.readFileSync(ANNOTATIONS_PATH, "utf-8")
+    );
     const cacheSize = Object.keys(cache).length;
     console.log(`Loaded ${cacheSize} cached annotations`);
 
@@ -120,11 +128,16 @@ function main() {
 
     // Clean any uncleaned entries and persist results
     const cleanStats = cleanAnnotations(cache);
-    const cacheChanged = keysRenamed > 0 || cleanStats.fixed > 0 || cleanStats.discarded > 0;
+    const cacheChanged =
+      keysRenamed > 0 || cleanStats.fixed > 0 || cleanStats.discarded > 0;
     if (cleanStats.fixed > 0 || cleanStats.discarded > 0) {
-      console.log(`Cleaned ${cleanStats.fixed + cleanStats.discarded} new entries: ${cleanStats.fixed} fixed, ${cleanStats.discarded} discarded`);
+      console.log(
+        `Cleaned ${cleanStats.fixed + cleanStats.discarded} new entries: ${cleanStats.fixed} fixed, ${cleanStats.discarded} discarded`
+      );
       if (Object.keys(cleanStats.discardReasons).length > 0) {
-        for (const [reason, count] of Object.entries(cleanStats.discardReasons)) {
+        for (const [reason, count] of Object.entries(
+          cleanStats.discardReasons
+        )) {
           console.log(`  ${reason}: ${count}`);
         }
       }
@@ -134,14 +147,14 @@ function main() {
     // Persist if anything changed (key normalization or cleaning)
     if (cacheChanged) {
       fs.writeFileSync(ANNOTATIONS_PATH, JSON.stringify(cache, null, 2));
-      console.log('Updated annotations cache');
+      console.log("Updated annotations cache");
     }
 
     // Apply non-discarded annotations to clues
     for (const clue of toInsert) {
       const key = clue.clue_text.toLowerCase();
       const cached = cache[key];
-      if (cached && cached.annotation && !cached.discarded) {
+      if (cached?.annotation && !cached.discarded) {
         clue.annotation = cached.annotation;
         clue.wordplay_part = cached.annotation;
         annotationsApplied++;
@@ -150,14 +163,18 @@ function main() {
       }
     }
 
-    console.log(`Applied ${annotationsApplied} scraped annotations (skipped ${annotationsDiscarded} discarded)\n`);
+    console.log(
+      `Applied ${annotationsApplied} scraped annotations (skipped ${annotationsDiscarded} discarded)\n`
+    );
   } else {
-    console.log('No annotations cache found (run scrape-annotations.ts first to improve quality)\n');
+    console.log(
+      "No annotations cache found (run scrape-annotations.ts first to improve quality)\n"
+    );
   }
 
   // 2. Create SQLite database
   const db = new Database(OUTPUT_PATH);
-  db.pragma('journal_mode = WAL');
+  db.pragma("journal_mode = WAL");
 
   // Create clue_types table
   db.exec(`
@@ -169,7 +186,7 @@ function main() {
   `);
 
   const insertType = db.prepare(
-    'INSERT INTO clue_types (slug, name) VALUES (?, ?)'
+    "INSERT INTO clue_types (slug, name) VALUES (?, ?)"
   );
 
   const typeMap = new Map<string, number>();
@@ -246,7 +263,7 @@ function main() {
   insertAll();
 
   // Create index on answer for fast lookups
-  db.exec('CREATE INDEX idx_clues_answer ON clues(answer)');
+  db.exec("CREATE INDEX idx_clues_answer ON clues(answer)");
 
   db.close();
 
@@ -265,7 +282,7 @@ function main() {
       (typeCounts.get(clue.clue_type_slug) ?? 0) + 1
     );
   }
-  console.log('\nType distribution:');
+  console.log("\nType distribution:");
   for (const [type, count] of [...typeCounts.entries()].sort(
     (a, b) => b[1] - a[1]
   )) {

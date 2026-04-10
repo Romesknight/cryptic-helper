@@ -1,7 +1,11 @@
-import { searchDatabase } from './database';
-import { solveAnagram } from './anagram';
-import { solveHiddenWord } from './hidden-word';
-import type { SolveResponse, SolveAnswerResponse, SolveHintResponse } from '@/types/api';
+import type {
+  SolveAnswerResponse,
+  SolveHintResponse,
+  SolveResponse,
+} from "@/types/api";
+import { solveAnagram } from "./anagram";
+import { searchDatabase } from "./database";
+import { solveHiddenWord } from "./hidden-word";
 
 /**
  * Solve a cryptic clue using traditional (non-AI) methods.
@@ -14,7 +18,7 @@ import type { SolveResponse, SolveAnswerResponse, SolveHintResponse } from '@/ty
  */
 export async function solveTraditional(
   clue: string,
-  mode: 'hint' | 'answer',
+  mode: "hint" | "answer",
   letterPattern?: string
 ): Promise<SolveResponse> {
   // 1. Try database lookup first (fastest for known clues)
@@ -22,7 +26,7 @@ export async function solveTraditional(
     const dbResults = await searchDatabase(clue, letterPattern);
     if (dbResults.length > 0) {
       const best = dbResults[0];
-      if (mode === 'answer') {
+      if (mode === "answer") {
         return {
           answer: best.answer,
           clueType: best.clueType,
@@ -42,8 +46,8 @@ export async function solveTraditional(
     }
   } catch (err) {
     // Database unavailable — continue to other methods
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[solver] Database search failed:', err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[solver] Database search failed:", err);
     }
   }
 
@@ -51,21 +55,21 @@ export async function solveTraditional(
   const hiddenResults = await solveHiddenWord(clue, letterPattern);
   if (hiddenResults.length > 0) {
     const best = hiddenResults[0];
-    if (mode === 'answer') {
+    if (mode === "answer") {
       return {
         answer: best.answer,
-        clueType: 'hidden-word',
-        clueTypeLabel: 'Hidden Word',
+        clueType: "hidden-word",
+        clueTypeLabel: "Hidden Word",
         annotation: `HIDDEN WORD: **${best.answer}** — [${best.indicator}] is the hidden word indicator. The answer is concealed within the clue text.`,
-        definition: '(definition detected from clue context)',
+        definition: "(definition detected from clue context)",
         confidence: best.confidence,
       } satisfies SolveAnswerResponse;
     }
     return {
       hint: `This appears to be a Hidden Word clue. Look for the answer hidden within the consecutive letters of the clue. The indicator "${best.indicator}" signals this.`,
-      clueType: 'hidden-word',
-      clueTypeLabel: 'Hidden Word',
-      definition: '(hidden within the clue text)',
+      clueType: "hidden-word",
+      clueTypeLabel: "Hidden Word",
+      definition: "(hidden within the clue text)",
       confidence: best.confidence,
     } satisfies SolveHintResponse;
   }
@@ -74,43 +78,43 @@ export async function solveTraditional(
   const anagramResults = await solveAnagram(clue, letterPattern);
   if (anagramResults.length > 0) {
     const best = anagramResults[0];
-    if (mode === 'answer') {
+    if (mode === "answer") {
       return {
         answer: best.answer,
-        clueType: 'anagram',
-        clueTypeLabel: 'Anagram',
+        clueType: "anagram",
+        clueTypeLabel: "Anagram",
         annotation: `ANAGRAM: **${best.answer}** — [${best.indicator}] is the anagram indicator. {${best.fodder.toUpperCase()}} rearranged → **${best.answer}**.`,
-        definition: '(definition detected from clue context)',
+        definition: "(definition detected from clue context)",
         confidence: best.confidence,
       } satisfies SolveAnswerResponse;
     }
     return {
       hint: `This appears to be an Anagram clue. The indicator "${best.indicator}" signals that letters need rearranging. Look at the letters of "${best.fodder}" — they can form the answer.`,
-      clueType: 'anagram',
-      clueTypeLabel: 'Anagram',
-      definition: '(anagram of ' + best.fodder + ')',
+      clueType: "anagram",
+      clueTypeLabel: "Anagram",
+      definition: `(anagram of ${best.fodder})`,
       confidence: best.confidence,
     } satisfies SolveHintResponse;
   }
 
   // 4. No match found — return a helpful "no result" response
-  if (mode === 'answer') {
+  if (mode === "answer") {
     return {
-      answer: '(no match found)',
-      clueType: 'unknown',
-      clueTypeLabel: 'Unknown',
+      answer: "(no match found)",
+      clueType: "unknown",
+      clueTypeLabel: "Unknown",
       annotation:
-        'Traditional solver could not find a confident match. Try the AI solver for more complex clue types.',
-      definition: '',
-      confidence: 'low',
+        "Traditional solver could not find a confident match. Try the AI solver for more complex clue types.",
+      definition: "",
+      confidence: "low",
     } satisfies SolveAnswerResponse;
   }
 
   return {
-    hint: 'The traditional solver could not identify the clue type or find a match. Try the AI solver for more complex clues, or check the Learn section for clue type patterns.',
-    clueType: 'unknown',
-    clueTypeLabel: 'Unknown',
-    definition: '',
-    confidence: 'low',
+    hint: "The traditional solver could not identify the clue type or find a match. Try the AI solver for more complex clues, or check the Learn section for clue type patterns.",
+    clueType: "unknown",
+    clueTypeLabel: "Unknown",
+    definition: "",
+    confidence: "low",
   } satisfies SolveHintResponse;
 }

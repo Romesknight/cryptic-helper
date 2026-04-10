@@ -1,5 +1,3 @@
-import type { SolveResponse } from '@/types/api';
-
 let wordSet: Set<string> | null = null;
 let anagramIndex: Map<string, string[]> | null = null;
 let wordsByLength: Map<number, string[]> | null = null;
@@ -8,7 +6,7 @@ let wordsByLength: Map<number, string[]> | null = null;
  * Sort a string's letters alphabetically to create an anagram signature.
  */
 function sortLetters(word: string): string {
-  return word.toLowerCase().split('').sort().join('');
+  return word.toLowerCase().split("").sort().join("");
 }
 
 /**
@@ -18,7 +16,7 @@ async function ensureLoaded(): Promise<void> {
   if (wordSet) return;
 
   // Dynamic import of the JSON word list
-  const words: string[] = (await import('@/data/words.json')).default;
+  const words: string[] = (await import("@/data/words.json")).default;
 
   wordSet = new Set(words.map((w) => w.toLowerCase()));
   anagramIndex = new Map();
@@ -52,7 +50,7 @@ async function ensureLoaded(): Promise<void> {
  */
 export async function isWord(word: string): Promise<boolean> {
   await ensureLoaded();
-  return wordSet!.has(word.toLowerCase());
+  return wordSet?.has(word.toLowerCase());
 }
 
 /**
@@ -60,8 +58,8 @@ export async function isWord(word: string): Promise<boolean> {
  */
 export async function getAnagrams(letters: string): Promise<string[]> {
   await ensureLoaded();
-  const sig = sortLetters(letters.replace(/\s/g, ''));
-  return anagramIndex!.get(sig) ?? [];
+  const sig = sortLetters(letters.replace(/\s/g, ""));
+  return anagramIndex?.get(sig) ?? [];
 }
 
 /**
@@ -69,7 +67,7 @@ export async function getAnagrams(letters: string): Promise<string[]> {
  */
 export async function getWordsOfLength(n: number): Promise<string[]> {
   await ensureLoaded();
-  return wordsByLength!.get(n) ?? [];
+  return wordsByLength?.get(n) ?? [];
 }
 
 /**
@@ -81,9 +79,12 @@ export function matchesPattern(
   pattern: string | undefined
 ): boolean {
   if (!pattern) return true;
-  const nums = pattern.replace(/[^0-9,]/g, '').split(',').map(Number);
+  const nums = pattern
+    .replace(/[^0-9,]/g, "")
+    .split(",")
+    .map(Number);
   const totalLength = nums.reduce((a, b) => a + b, 0);
-  return word.replace(/\s/g, '').length === totalLength;
+  return word.replace(/\s/g, "").length === totalLength;
 }
 
 /**
@@ -91,7 +92,11 @@ export function matchesPattern(
  */
 export function parsePatternLength(pattern: string | undefined): number | null {
   if (!pattern) return null;
-  const nums = pattern.replace(/[^0-9,]/g, '').split(',').filter(Boolean).map(Number);
+  const nums = pattern
+    .replace(/[^0-9,]/g, "")
+    .split(",")
+    .filter(Boolean)
+    .map(Number);
   if (nums.length === 0) return null;
   return nums.reduce((a, b) => a + b, 0);
 }

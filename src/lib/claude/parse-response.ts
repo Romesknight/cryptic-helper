@@ -9,7 +9,7 @@
  */
 
 export interface AnnotationSegment {
-  type: 'text' | 'answer' | 'indicator' | 'deleted' | 'explanation';
+  type: "text" | "answer" | "indicator" | "deleted" | "explanation";
   content: string;
 }
 
@@ -32,7 +32,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
       index: number;
       fullMatch: string;
       content: string;
-      type: AnnotationSegment['type'];
+      type: AnnotationSegment["type"];
     }> = [];
 
     if (boldMatch?.index !== undefined) {
@@ -40,7 +40,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
         index: boldMatch.index,
         fullMatch: boldMatch[0],
         content: boldMatch[1],
-        type: 'answer',
+        type: "answer",
       });
     }
 
@@ -49,7 +49,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
         index: bracketMatch.index,
         fullMatch: bracketMatch[0],
         content: bracketMatch[1],
-        type: 'indicator',
+        type: "indicator",
       });
     }
 
@@ -58,7 +58,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
         index: curlyMatch.index,
         fullMatch: curlyMatch[0],
         content: curlyMatch[1],
-        type: 'deleted',
+        type: "deleted",
       });
     }
 
@@ -70,7 +70,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
           index: parenMatch.index,
           fullMatch: parenMatch[0],
           content: parenMatch[1],
-          type: 'explanation',
+          type: "explanation",
         });
       }
     }
@@ -78,7 +78,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
     if (candidates.length === 0) {
       // No more special tokens — rest is plain text
       if (remaining.length > 0) {
-        segments.push({ type: 'text', content: remaining });
+        segments.push({ type: "text", content: remaining });
       }
       break;
     }
@@ -90,7 +90,7 @@ export function parseAnnotation(annotation: string): AnnotationSegment[] {
     // Add text before the match
     if (earliest.index > 0) {
       segments.push({
-        type: 'text',
+        type: "text",
         content: remaining.slice(0, earliest.index),
       });
     }

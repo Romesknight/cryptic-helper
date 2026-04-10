@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: '/', label: 'Solver' },
-  { href: '/learn', label: 'Learn' },
+  { href: "/", label: "Solver" },
+  { href: "/learn", label: "Learn" },
 ];
 
 export default function Header() {
@@ -21,7 +21,9 @@ export default function Header() {
           href="/"
           className="flex items-center gap-2 text-lg font-bold text-foreground"
         >
-          <span aria-hidden="true" className="text-2xl">&#128273;</span>
+          <span aria-hidden="true" className="text-2xl">
+            &#128273;
+          </span>
           <span>Cryptic Helper</span>
         </Link>
 
@@ -33,18 +35,18 @@ export default function Header() {
                 <Link
                   href={link.href}
                   className={cn(
-                    'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    'min-h-[44px] inline-flex items-center',
-                    'hover:bg-stone-100 dark:hover:bg-stone-800',
+                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "min-h-[44px] inline-flex items-center",
+                    "hover:bg-stone-100 dark:hover:bg-stone-800",
                     pathname === link.href ||
-                      (link.href !== '/' && pathname.startsWith(link.href))
-                      ? 'text-primary bg-primary-light/50'
-                      : 'text-muted'
+                      (link.href !== "/" && pathname.startsWith(link.href))
+                      ? "text-primary bg-primary-light/50"
+                      : "text-muted"
                   )}
                   aria-current={
                     pathname === link.href ||
-                    (link.href !== '/' && pathname.startsWith(link.href))
-                      ? 'page'
+                    (link.href !== "/" && pathname.startsWith(link.href))
+                      ? "page"
                       : undefined
                   }
                 >
@@ -103,19 +105,19 @@ export default function Header() {
                 <Link
                   href={link.href}
                   className={cn(
-                    'block rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                    'min-h-[44px] flex items-center',
-                    'hover:bg-stone-100 dark:hover:bg-stone-800',
+                    "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "min-h-[44px] flex items-center",
+                    "hover:bg-stone-100 dark:hover:bg-stone-800",
                     pathname === link.href ||
-                      (link.href !== '/' && pathname.startsWith(link.href))
-                      ? 'text-primary bg-primary-light/50'
-                      : 'text-muted'
+                      (link.href !== "/" && pathname.startsWith(link.href))
+                      ? "text-primary bg-primary-light/50"
+                      : "text-muted"
                   )}
                   onClick={() => setMobileOpen(false)}
                   aria-current={
                     pathname === link.href ||
-                    (link.href !== '/' && pathname.startsWith(link.href))
-                      ? 'page'
+                    (link.href !== "/" && pathname.startsWith(link.href))
+                      ? "page"
                       : undefined
                   }
                 >

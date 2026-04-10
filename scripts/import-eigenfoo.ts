@@ -13,29 +13,32 @@
  *   curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db
  */
 
-import fs from 'fs';
-import path from 'path';
-import { createClient } from '@supabase/supabase-js';
-import { readEigenfooClues } from './lib/eigenfoo-reader.js';
-import { transformRow } from './lib/transformers.js';
-import type { TransformedClue } from './lib/types.js';
+import fs from "node:fs";
+import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import { readEigenfooClues } from "./lib/eigenfoo-reader.js";
+import { transformRow } from "./lib/transformers.js";
+import type { TransformedClue } from "./lib/types.js";
 
 // ── Load .env.local (Next.js doesn't load it for standalone scripts) ──
 
 const envPath = path.join(
-  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')),
-  '..',
-  '.env.local'
+  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")),
+  "..",
+  ".env.local"
 );
 if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf-8');
-  for (const line of envContent.split('\n')) {
+  const envContent = fs.readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
     if (eqIdx === -1) continue;
     const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+    const value = trimmed
+      .slice(eqIdx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
     if (!process.env[key]) {
       process.env[key] = value;
     }
@@ -54,12 +57,12 @@ function getOption(name: string, defaultValue: number): number {
   const idx = args.indexOf(`--${name}`);
   if (idx === -1 || idx + 1 >= args.length) return defaultValue;
   const val = parseInt(args[idx + 1], 10);
-  return isNaN(val) ? defaultValue : val;
+  return Number.isNaN(val) ? defaultValue : val;
 }
 
-const DRY_RUN = getFlag('dry-run');
-const VERBOSE = getFlag('verbose');
-const TOTAL_LIMIT = getOption('limit', 2000);
+const DRY_RUN = getFlag("dry-run");
+const VERBOSE = getFlag("verbose");
+const TOTAL_LIMIT = getOption("limit", 2000);
 
 // Number of indicator types we import
 const NUM_TYPES = 8;
@@ -74,8 +77,8 @@ function getSupabaseClient() {
 
   if (!url || !key) {
     console.error(
-      'Missing env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required.\n' +
-      'Use --dry-run to preview without database access.'
+      "Missing env vars: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required.\n" +
+        "Use --dry-run to preview without database access."
     );
     process.exit(1);
   }
@@ -86,11 +89,11 @@ function getSupabaseClient() {
 // ── Main ──
 
 async function main() {
-  console.log(`\nEigenfoo Import${DRY_RUN ? ' (DRY RUN)' : ''}`);
+  console.log(`\nEigenfoo Import${DRY_RUN ? " (DRY RUN)" : ""}`);
   console.log(`Target: ~${TOTAL_LIMIT} clues (~${LIMIT_PER_TYPE} per type)\n`);
 
   // 1. Read raw rows from SQLite
-  console.log('Reading eigenfoo database...');
+  console.log("Reading eigenfoo database...");
   const rawRows = readEigenfooClues(LIMIT_PER_TYPE);
   console.log(`Read ${rawRows.length} raw rows from SQLite\n`);
 
@@ -107,10 +110,13 @@ async function main() {
       }
       continue;
     }
+    // biome-ignore lint/style/noNonNullAssertion: clue is guaranteed non-null when result has no error
     transformed.push(result.clue!);
   }
 
-  console.log(`Transformed: ${transformed.length} valid, ${validationFailures} validation failures`);
+  console.log(
+    `Transformed: ${transformed.length} valid, ${validationFailures} validation failures`
+  );
 
   // Deduplicate by clue_text (keep first occurrence)
   const seen = new Set<string>();
@@ -124,9 +130,11 @@ async function main() {
 
   const deduped = transformed.length - unique.length;
   if (deduped > 0) {
-    console.log(`Deduplicated: removed ${deduped} duplicates, ${unique.length} unique clues\n`);
+    console.log(
+      `Deduplicated: removed ${deduped} duplicates, ${unique.length} unique clues\n`
+    );
   } else {
-    console.log('');
+    console.log("");
   }
 
   // Apply total limit
@@ -134,40 +142,47 @@ async function main() {
 
   if (DRY_RUN) {
     // Dry run: show sample and stats
-    console.log('--- Sample Transformed Clues ---');
+    console.log("--- Sample Transformed Clues ---");
     for (const clue of toInsert.slice(0, 10)) {
-      console.log(`  ${clue.answer} (${clue.clue_type_slug}) [${clue.letter_pattern}] d=${clue.difficulty}`);
+      console.log(
+        `  ${clue.answer} (${clue.clue_type_slug}) [${clue.letter_pattern}] d=${clue.difficulty}`
+      );
       console.log(`    Clue:      "${clue.clue_text}"`);
       console.log(`    Def:       "${clue.definition_part}"`);
       console.log(`    Wordplay:  ${clue.wordplay_part}`);
       console.log(`    Annotation: ${clue.annotation}`);
       console.log(`    Src:       ${clue.source}`);
-      console.log('');
+      console.log("");
     }
 
     // Type distribution
     const typeCounts = new Map<string, number>();
     for (const clue of toInsert) {
-      typeCounts.set(clue.clue_type_slug, (typeCounts.get(clue.clue_type_slug) ?? 0) + 1);
+      typeCounts.set(
+        clue.clue_type_slug,
+        (typeCounts.get(clue.clue_type_slug) ?? 0) + 1
+      );
     }
-    console.log('--- Type Distribution ---');
-    for (const [type, count] of [...typeCounts.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log("--- Type Distribution ---");
+    for (const [type, count] of [...typeCounts.entries()].sort(
+      (a, b) => b[1] - a[1]
+    )) {
       console.log(`  ${type}: ${count}`);
     }
     console.log(`\nTotal: ${toInsert.length} clues ready for import`);
-    console.log('Run without --dry-run to insert into Supabase.\n');
+    console.log("Run without --dry-run to insert into Supabase.\n");
     return;
   }
 
   // 3. Fetch clue_type IDs from Supabase
   const supabase = getSupabaseClient();
-  console.log('Fetching clue type IDs from Supabase...');
+  console.log("Fetching clue type IDs from Supabase...");
   const { data: clueTypes, error: typeError } = await supabase
-    .from('clue_types')
-    .select('id, slug');
+    .from("clue_types")
+    .select("id, slug");
 
   if (typeError) {
-    console.error('Error fetching clue types:', typeError);
+    console.error("Error fetching clue types:", typeError);
     process.exit(1);
   }
 
@@ -188,7 +203,9 @@ async function main() {
         const clueTypeId = typeMap.get(clue.clue_type_slug);
         if (!clueTypeId) {
           if (VERBOSE) {
-            console.log(`  SKIP: Unknown clue type "${clue.clue_type_slug}" for ${clue.answer}`);
+            console.log(
+              `  SKIP: Unknown clue type "${clue.clue_type_slug}" for ${clue.answer}`
+            );
           }
           failed++;
           return null;
@@ -212,8 +229,8 @@ async function main() {
     if (rows.length === 0) continue;
 
     const { error, count } = await supabase
-      .from('clues')
-      .upsert(rows, { onConflict: 'clue_text', count: 'exact' });
+      .from("clues")
+      .upsert(rows, { onConflict: "clue_text", count: "exact" });
 
     if (error) {
       console.error(`  Batch error at ${i}: ${error.message}`);
@@ -238,7 +255,7 @@ async function main() {
   }
 
   if (!VERBOSE) {
-    process.stdout.write('\n');
+    process.stdout.write("\n");
   }
 
   console.log(
@@ -247,6 +264,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  console.error("Fatal error:", err);
   process.exit(1);
 });

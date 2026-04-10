@@ -1,7 +1,7 @@
-import Link from 'next/link';
-import Card from '@/components/ui/Card';
-import ClueTypeBadge from '@/components/shared/ClueTypeBadge';
-import type { ClueType } from '@/types/clue';
+import Link from "next/link";
+import ClueTypeBadge from "@/components/shared/ClueTypeBadge";
+import Card from "@/components/ui/Card";
+import type { ClueType } from "@/types/clue";
 
 interface ClueTypeCardProps {
   clueType: ClueType;
@@ -11,7 +11,10 @@ interface ClueTypeCardProps {
 /**
  * Card for the learn overview page, showing a clue type with a brief description.
  */
-export default function ClueTypeCard({ clueType, exampleClue }: ClueTypeCardProps) {
+export default function ClueTypeCard({
+  clueType,
+  exampleClue,
+}: ClueTypeCardProps) {
   return (
     <Link href={`/learn/${clueType.slug}`} className="group block">
       <Card className="h-full transition-shadow hover:shadow-md group-hover:border-primary/30">
@@ -34,7 +37,9 @@ export default function ClueTypeCard({ clueType, exampleClue }: ClueTypeCardProp
             </svg>
           </div>
           <h3 className="text-lg font-semibold">{clueType.name}</h3>
-          <p className="text-sm text-muted line-clamp-2">{clueType.description}</p>
+          <p className="text-sm text-muted line-clamp-2">
+            {clueType.description}
+          </p>
           {exampleClue && (
             <p className="mt-1 text-sm italic text-muted/80 border-t border-border pt-2">
               &ldquo;{exampleClue}&rdquo;

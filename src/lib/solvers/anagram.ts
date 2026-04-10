@@ -1,14 +1,14 @@
-import { CLUE_TYPES } from '@/data/clue-types';
-import { getAnagrams, matchesPattern, parsePatternLength } from './dictionary';
+import { CLUE_TYPES } from "@/data/clue-types";
+import { getAnagrams, matchesPattern, parsePatternLength } from "./dictionary";
 
-const anagramType = CLUE_TYPES.find((t) => t.slug === 'anagram');
+const anagramType = CLUE_TYPES.find((t) => t.slug === "anagram");
 const ANAGRAM_INDICATORS = anagramType?.commonIndicators ?? [];
 
 interface AnagramCandidate {
   answer: string;
   fodder: string;
   indicator: string;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
 }
 
 /**
@@ -19,7 +19,7 @@ function findAnagramIndicator(
   words: string[]
 ): { indicator: string; index: number } | null {
   for (let i = 0; i < words.length; i++) {
-    const word = words[i].toLowerCase().replace(/[^a-z]/g, '');
+    const word = words[i].toLowerCase().replace(/[^a-z]/g, "");
     if (ANAGRAM_INDICATORS.includes(word)) {
       return { indicator: word, index: i };
     }
@@ -40,11 +40,15 @@ function extractFodder(
 
   // Try words before the indicator as fodder
   if (indicatorIndex > 0) {
-    let fodder = '';
+    let fodder = "";
     for (let i = indicatorIndex - 1; i >= 0; i--) {
-      const word = words[i].toLowerCase().replace(/[^a-z]/g, '');
+      const word = words[i].toLowerCase().replace(/[^a-z]/g, "");
       fodder = word + fodder;
-      if (targetLength === null || fodder.length === targetLength) {
+      if (
+        targetLength === null
+          ? fodder.length >= 3
+          : fodder.length === targetLength
+      ) {
         candidates.push(fodder);
       }
     }
@@ -52,11 +56,15 @@ function extractFodder(
 
   // Try words after the indicator as fodder
   if (indicatorIndex < words.length - 1) {
-    let fodder = '';
+    let fodder = "";
     for (let i = indicatorIndex + 1; i < words.length; i++) {
-      const word = words[i].toLowerCase().replace(/[^a-z]/g, '');
+      const word = words[i].toLowerCase().replace(/[^a-z]/g, "");
       fodder = fodder + word;
-      if (targetLength === null || fodder.length === targetLength) {
+      if (
+        targetLength === null
+          ? fodder.length >= 3
+          : fodder.length === targetLength
+      ) {
         candidates.push(fodder);
       }
     }
@@ -74,7 +82,7 @@ export async function solveAnagram(
   letterPattern?: string
 ): Promise<AnagramCandidate[]> {
   // Strip the letter count pattern from the clue text (e.g., "(8)")
-  const cleanClue = clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, '').trim();
+  const cleanClue = clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, "").trim();
   const words = cleanClue.split(/\s+/);
 
   const indicatorResult = findAnagramIndicator(words);
@@ -101,7 +109,7 @@ export async function solveAnagram(
         answer: anagram.toUpperCase(),
         fodder,
         indicator: indicatorResult.indicator,
-        confidence: anagrams.length === 1 ? 'high' : 'medium',
+        confidence: anagrams.length === 1 ? "high" : "medium",
       });
     }
   }

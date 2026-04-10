@@ -10,17 +10,17 @@
  * Download: curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
-import type { EigenfooRawRow, EigenfooIndicatorType } from './types.js';
-import { INDICATOR_COLUMNS } from './types.js';
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import type { EigenfooRawRow } from "./types.js";
+import { INDICATOR_COLUMNS } from "./types.js";
 
 const DB_PATH = path.join(
-  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')),
-  '..',
-  'data',
-  'cryptics.db'
+  path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1")),
+  "..",
+  "data",
+  "cryptics.db"
 );
 
 /**
@@ -34,14 +34,15 @@ const DB_PATH = path.join(
  * @returns Array of raw rows with all indicator columns populated.
  */
 export function readEigenfooClues(limitPerType = 300): EigenfooRawRow[] {
-  const dbPath = DB_PATH.startsWith('/') && process.platform === 'win32'
-    ? DB_PATH.slice(1)
-    : DB_PATH;
+  const dbPath =
+    DB_PATH.startsWith("/") && process.platform === "win32"
+      ? DB_PATH.slice(1)
+      : DB_PATH;
 
   if (!fs.existsSync(dbPath)) {
     console.error(`Database not found at: ${dbPath}`);
     console.error(
-      'Download it first:\n  curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db'
+      "Download it first:\n  curl -o scripts/data/cryptics.db https://cryptics.georgeho.org/data.db"
     );
     process.exit(1);
   }

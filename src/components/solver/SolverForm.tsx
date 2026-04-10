@@ -1,45 +1,50 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Badge from '@/components/ui/Badge';
-import Skeleton from '@/components/ui/Skeleton';
-import ModeToggle from './ModeToggle';
-import MethodToggle from './MethodToggle';
-import AnnotatedClue from './AnnotatedClue';
+import { useCallback, useEffect, useRef, useState } from "react";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
+import Skeleton from "@/components/ui/Skeleton";
 import type {
-  SolveResponse,
   SolveAnswerResponse,
   SolveHintResponse,
   SolveMethod,
+  SolveResponse,
   SolveResultWithMethod,
-} from '@/types/api';
+} from "@/types/api";
+import AnnotatedClue from "./AnnotatedClue";
+import MethodToggle from "./MethodToggle";
+import ModeToggle from "./ModeToggle";
 
 function isAnswerResponse(r: SolveResponse): r is SolveAnswerResponse {
-  return 'answer' in r;
+  return "answer" in r;
 }
 
 function isHintResponse(r: SolveResponse): r is SolveHintResponse {
-  return 'hint' in r;
+  return "hint" in r;
 }
 
 /**
  * Fetch a single solver method and return the result.
  */
 async function fetchSolver(
-  payload: { clue: string; letterPattern?: string; mode: string; method: 'traditional' | 'ai' },
+  payload: {
+    clue: string;
+    letterPattern?: string;
+    mode: string;
+    method: "traditional" | "ai";
+  },
   signal: AbortSignal
 ): Promise<SolveResultWithMethod> {
-  const res = await fetch('/api/solve', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/solve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     signal,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  if (!res.ok) throw new Error(data.error || "Something went wrong");
   return { method: payload.method, result: data as SolveResponse };
 }
 
@@ -54,8 +59,8 @@ function crossValidateResults(
 ): SolveResultWithMethod[] {
   if (results.length < 2) return results;
 
-  const traditional = results.find((r) => r.method === 'traditional');
-  const ai = results.find((r) => r.method === 'ai');
+  const traditional = results.find((r) => r.method === "traditional");
+  const ai = results.find((r) => r.method === "ai");
   if (!traditional || !ai) return results;
 
   // Only cross-validate in answer mode (both must have answer fields)
@@ -67,7 +72,7 @@ function crossValidateResults(
   const aiAnswer = ai.result.answer.trim().toUpperCase();
 
   // DB returned no real match — nothing to validate against
-  if (dbAnswer === '(NO MATCH FOUND)' || dbAnswer === '') {
+  if (dbAnswer === "(NO MATCH FOUND)" || dbAnswer === "") {
     return results;
   }
 
@@ -75,11 +80,11 @@ function crossValidateResults(
 
   if (dbAnswer === aiAnswer) {
     // Agreement: boost AI confidence to high
-    adjustedConfidence = 'high';
+    adjustedConfidence = "high";
   } else {
     // Disagreement: cap AI confidence at medium
-    if (ai.result.confidence === 'high') {
-      adjustedConfidence = 'medium';
+    if (ai.result.confidence === "high") {
+      adjustedConfidence = "medium";
     }
   }
 
@@ -88,8 +93,14 @@ function crossValidateResults(
   }
 
   return results.map((r) => {
-    if (r.method === 'ai' && isAnswerResponse(r.result)) {
-      return { ...r, result: { ...r.result, confidence: adjustedConfidence } satisfies SolveAnswerResponse };
+    if (r.method === "ai" && isAnswerResponse(r.result)) {
+      return {
+        ...r,
+        result: {
+          ...r.result,
+          confidence: adjustedConfidence,
+        } satisfies SolveAnswerResponse,
+      };
     }
     return r;
   });
@@ -110,9 +121,7 @@ function ResultCard({
       <div className="flex flex-col gap-4">
         {/* Method badge + clue type badge */}
         <div className="flex flex-wrap items-center gap-2">
-          {methodLabel && (
-            <Badge variant="default">{methodLabel}</Badge>
-          )}
+          {methodLabel && <Badge variant="default">{methodLabel}</Badge>}
           <Badge variant="success">
             {isAnswerResponse(result)
               ? result.clueTypeLabel
@@ -120,11 +129,11 @@ function ResultCard({
           </Badge>
           <Badge
             variant={
-              result.confidence === 'high'
-                ? 'success'
-                : result.confidence === 'medium'
-                  ? 'warning'
-                  : 'default'
+              result.confidence === "high"
+                ? "success"
+                : result.confidence === "medium"
+                  ? "warning"
+                  : "default"
             }
           >
             {result.confidence} confidence
@@ -171,19 +180,22 @@ function ResultCard({
 }
 
 export default function SolverForm() {
-  const [clue, setClue] = useState('');
-  const [letterPattern, setLetterPattern] = useState('');
-  const [mode, setMode] = useState<'hint' | 'answer'>('hint');
-  const [method, setMethod] = useState<SolveMethod>('traditional');
+  const [clue, setClue] = useState("");
+  const [letterPattern, setLetterPattern] = useState("");
+  const [mode, setMode] = useState<"hint" | "answer">("hint");
+  const [method, setMethod] = useState<SolveMethod>("traditional");
   const [loading, setLoading] = useState(false);
   const [loadingTraditional, setLoadingTraditional] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
   const [result, setResult] = useState<SolveResponse | null>(null);
   const [bothResults, setBothResults] = useState<SolveResultWithMethod[]>([]);
-  const [displayResults, setDisplayResults] = useState<SolveResultWithMethod[]>([]);
+  const [displayResults, setDisplayResults] = useState<SolveResultWithMethod[]>(
+    []
+  );
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+  const submissionIdRef = useRef(0);
 
   // Abort in-flight requests on unmount
   useEffect(() => {
@@ -209,19 +221,20 @@ export default function SolverForm() {
 
       if (!clue.trim()) return;
 
-      // Abort any in-flight requests
+      // Abort any in-flight requests and stamp a new submission ID
       if (abortRef.current) {
         abortRef.current.abort();
       }
       const controller = new AbortController();
       abortRef.current = controller;
+      const submissionId = ++submissionIdRef.current;
 
       setError(null);
       setResult(null);
       setBothResults([]);
       setDisplayResults([]);
 
-      if (method === 'both') {
+      if (method === "both") {
         // Fire two parallel fetches — each renders independently as it arrives
         setLoading(true);
         setLoadingTraditional(true);
@@ -234,45 +247,51 @@ export default function SolverForm() {
         };
 
         const traditionalPromise = fetchSolver(
-          { ...payload, method: 'traditional' },
+          { ...payload, method: "traditional" },
           controller.signal
         )
           .then((r) => {
+            if (submissionIdRef.current !== submissionId) return;
             setBothResults((prev) => [...prev, r]);
             setLoadingTraditional(false);
           })
           .catch((err) => {
-            if (err.name !== 'AbortError') {
+            if (submissionIdRef.current !== submissionId) return;
+            if (err.name !== "AbortError") {
               setLoadingTraditional(false);
-              setError((prev) => prev ?? `Traditional solver failed: ${err.message}`);
+              setError(
+                (prev) => prev ?? `Traditional solver failed: ${err.message}`
+              );
             }
           });
 
         const aiPromise = fetchSolver(
-          { ...payload, method: 'ai' },
+          { ...payload, method: "ai" },
           controller.signal
         )
           .then((r) => {
+            if (submissionIdRef.current !== submissionId) return;
             setBothResults((prev) => [...prev, r]);
             setLoadingAi(false);
           })
           .catch((err) => {
-            if (err.name !== 'AbortError') {
+            if (submissionIdRef.current !== submissionId) return;
+            if (err.name !== "AbortError") {
               setLoadingAi(false);
               setError((prev) => prev ?? `AI solver failed: ${err.message}`);
             }
           });
 
         await Promise.allSettled([traditionalPromise, aiPromise]);
-        setLoading(false);
+        if (submissionIdRef.current === submissionId) setLoading(false);
       } else {
         // Single method — unchanged behavior
         setLoading(true);
 
         try {
-          const res = await fetch('/api/solve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const res = await fetch("/api/solve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               clue: clue.trim(),
               letterPattern: letterPattern.trim() || undefined,
@@ -285,14 +304,16 @@ export default function SolverForm() {
           const data = await res.json();
 
           if (!res.ok) {
-            setError(data.error || 'Something went wrong');
+            setError(data.error || "Something went wrong");
             return;
           }
 
           setResult(data as SolveResponse);
         } catch (err) {
-          if (err instanceof Error && err.name === 'AbortError') return;
-          setError('Network error. Please check your connection and try again.');
+          if (err instanceof Error && err.name === "AbortError") return;
+          setError(
+            "Network error. Please check your connection and try again."
+          );
         } finally {
           setLoading(false);
         }
@@ -302,9 +323,13 @@ export default function SolverForm() {
   );
 
   // Helper to find a result by method from displayResults
-  const traditionalResult = displayResults.find((r) => r.method === 'traditional');
-  const aiResult = displayResults.find((r) => r.method === 'ai');
-  const showBothGrid = method === 'both' && (loadingTraditional || loadingAi || displayResults.length > 0);
+  const traditionalResult = displayResults.find(
+    (r) => r.method === "traditional"
+  );
+  const aiResult = displayResults.find((r) => r.method === "ai");
+  const showBothGrid =
+    method === "both" &&
+    (loadingTraditional || loadingAi || displayResults.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -363,10 +388,10 @@ export default function SolverForm() {
                 </svg>
                 Analysing...
               </span>
-            ) : mode === 'hint' ? (
-              'Get Hint'
+            ) : mode === "hint" ? (
+              "Get Hint"
             ) : (
-              'Solve Clue'
+              "Solve Clue"
             )}
           </Button>
         </form>
@@ -375,7 +400,7 @@ export default function SolverForm() {
       {/* Results area with aria-live for screen readers */}
       <div aria-live="polite" aria-atomic="true">
         {/* Single method skeleton */}
-        {loading && method !== 'both' && (
+        {loading && method !== "both" && (
           <Card>
             <div className="flex flex-col gap-3">
               <Skeleton className="h-6 w-32" />
@@ -392,9 +417,7 @@ export default function SolverForm() {
         )}
 
         {/* Single result (traditional or ai) */}
-        {result && !loading && (
-          <ResultCard result={result} />
-        )}
+        {result && !loading && <ResultCard result={result} />}
 
         {/* Side-by-side results (both) — renders incrementally */}
         {showBothGrid && (
@@ -420,10 +443,7 @@ export default function SolverForm() {
             {/* AI slot */}
             <div>
               {aiResult ? (
-                <ResultCard
-                  result={aiResult.result}
-                  methodLabel="AI"
-                />
+                <ResultCard result={aiResult.result} methodLabel="AI" />
               ) : loadingAi ? (
                 <Card>
                   <div className="flex flex-col gap-3">

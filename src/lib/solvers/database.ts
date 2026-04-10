@@ -1,6 +1,6 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { normalizeText } from '@/lib/utils';
-import path from 'path';
+import path from "node:path";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { normalizeText } from "@/lib/utils";
 
 interface DatabaseResult {
   answer: string;
@@ -8,8 +8,8 @@ interface DatabaseResult {
   clueTypeLabel: string;
   annotation: string;
   definition: string;
-  confidence: 'high' | 'medium' | 'low';
-  source: 'database';
+  confidence: "high" | "medium" | "low";
+  source: "database";
 }
 
 /** Minimum Jaccard word-overlap score to accept a DB result. */
@@ -17,9 +17,39 @@ export const MIN_MATCH_SCORE = 0.4;
 
 /** Common words that inflate match scores without indicating a real clue match. */
 const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'is', 'it', 'of', 'in', 'to', 'for', 'on', 'at', 'by',
-  'or', 'and', 'but', 'not', 'no', 'so', 'as', 'if', 'be', 'do', 'has',
-  'had', 'was', 'are', 'were', 'been', 'have', 'with', 'from', 'this', 'that',
+  "a",
+  "an",
+  "the",
+  "is",
+  "it",
+  "of",
+  "in",
+  "to",
+  "for",
+  "on",
+  "at",
+  "by",
+  "or",
+  "and",
+  "but",
+  "not",
+  "no",
+  "so",
+  "as",
+  "if",
+  "be",
+  "do",
+  "has",
+  "had",
+  "was",
+  "are",
+  "were",
+  "been",
+  "have",
+  "with",
+  "from",
+  "this",
+  "that",
 ]);
 
 /** Minimum number of non-stop-word matches required to accept a result. */
@@ -36,7 +66,7 @@ export function clueMatchScore(inputClue: string, storedClue: string): number {
   const normalize = (s: string) =>
     s
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/[^a-z0-9\s]/g, "")
       .split(/\s+/)
       .filter((w) => w.length > 0 && !STOP_WORDS.has(w));
 
@@ -64,14 +94,14 @@ export function clueMatchScore(inputClue: string, storedClue: string): number {
  * - >= 0.4: cap at "low"
  */
 export function adjustConfidence(
-  original: 'high' | 'medium' | 'low',
+  original: "high" | "medium" | "low",
   score: number
-): 'high' | 'medium' | 'low' {
+): "high" | "medium" | "low" {
   if (score >= 0.8) return original;
   if (score >= 0.6) {
-    return original === 'high' ? 'medium' : original;
+    return original === "high" ? "medium" : original;
   }
-  return 'low';
+  return "low";
 }
 
 /**
@@ -81,32 +111,33 @@ export function adjustConfidence(
 function hasSupabaseConfig(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return !!url && !url.startsWith('YOUR_') && !!key && !key.startsWith('YOUR_');
+  return !!url && !url.startsWith("YOUR_") && !!key && !key.startsWith("YOUR_");
 }
 
 // ── Local SQLite fallback ──
 
 const LOCAL_DB_PATH = path.join(
   process.cwd(),
-  'scripts',
-  'data',
-  'clues-local.db'
+  "scripts",
+  "data",
+  "clues-local.db"
 );
 
 /** Cached better-sqlite3 Database instance (lazy-loaded, read-only). */
-let localDb: import('better-sqlite3').Database | null = null;
+let localDb: import("better-sqlite3").Database | null = null;
 
 /**
  * Get or create the cached local SQLite connection.
  * Returns null if the DB file doesn't exist or better-sqlite3 isn't available.
  */
-function getLocalDb(): import('better-sqlite3').Database | null {
+function getLocalDb(): import("better-sqlite3").Database | null {
   if (localDb) return localDb;
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Database = require('better-sqlite3') as typeof import('better-sqlite3');
-    const fs = require('fs') as typeof import('fs');
+    const Database =
+      require("better-sqlite3") as typeof import("better-sqlite3");
+    const fs = require("node:fs") as typeof import("fs");
 
     if (!fs.existsSync(LOCAL_DB_PATH)) return null;
 
@@ -128,16 +159,20 @@ function searchLocalDatabase(
   const db = getLocalDb();
   if (!db) return [];
 
-  const cleanClue = normalizeText(clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, '').trim());
+  const cleanClue = normalizeText(
+    clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, "").trim()
+  );
+  // Escape LIKE wildcards so user input can't pattern-inject
+  const escapedClue = cleanClue.replace(/[%_\\]/g, "\\$&");
 
   // Build optional letter_pattern filter
-  let patternFilter = '';
+  let patternFilter = "";
   const params: (string | number)[] = [];
 
   if (letterPattern) {
-    const pattern = letterPattern.replace(/[^0-9,]/g, '');
+    const pattern = letterPattern.replace(/[^0-9,]/g, "");
     if (pattern) {
-      patternFilter = 'AND c.letter_pattern = ?';
+      patternFilter = "AND c.letter_pattern = ?";
       params.push(pattern);
     }
   }
@@ -164,12 +199,12 @@ function searchLocalDatabase(
     }
   } catch (err) {
     // FTS query failed (e.g. special characters) — fall through to LIKE
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[solver] FTS search failed:', err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[solver] FTS search failed:", err);
     }
   }
 
-  // Fallback: LIKE search
+  // Fallback: LIKE search (uses ESCAPE '\' so % and _ in input are treated as literals)
   try {
     const likeRows = db
       .prepare(
@@ -178,17 +213,17 @@ function searchLocalDatabase(
                ct.slug AS clue_type_slug, ct.name AS clue_type_name
         FROM clues c
         JOIN clue_types ct ON ct.id = c.clue_type_id
-        WHERE c.clue_text LIKE ?
+        WHERE c.clue_text LIKE ? ESCAPE '\\'
           ${patternFilter}
         LIMIT 5
         `
       )
-      .all(`%${cleanClue}%`, ...params) as LocalRow[];
+      .all(`%${escapedClue}%`, ...params) as LocalRow[];
 
     return filterAndMapLocal(likeRows, cleanClue);
   } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[solver] LIKE search failed:', err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[solver] LIKE search failed:", err);
     }
     return [];
   }
@@ -207,23 +242,32 @@ interface LocalRow {
 /**
  * Filter local results by clue similarity, sort by best match, and map to DatabaseResult.
  */
-function filterAndMapLocal(rows: LocalRow[], inputClue: string): DatabaseResult[] {
+function filterAndMapLocal(
+  rows: LocalRow[],
+  inputClue: string
+): DatabaseResult[] {
   return rows
     .map((row) => {
-      const score = clueMatchScore(inputClue, row.clue_text ?? '');
-      const baseConfidence: 'high' | 'medium' | 'low' = row.is_verified ? 'high' : 'medium';
-      return { row, score, confidence: adjustConfidence(baseConfidence, score) };
+      const score = clueMatchScore(inputClue, row.clue_text ?? "");
+      const baseConfidence: "high" | "medium" | "low" = row.is_verified
+        ? "high"
+        : "medium";
+      return {
+        row,
+        score,
+        confidence: adjustConfidence(baseConfidence, score),
+      };
     })
     .filter(({ score }) => score >= MIN_MATCH_SCORE)
     .sort((a, b) => b.score - a.score)
     .map(({ row, confidence }) => ({
-      answer: row.answer ?? '',
-      clueType: row.clue_type_slug ?? 'unknown',
-      clueTypeLabel: row.clue_type_name ?? 'Unknown',
-      annotation: row.annotation ?? '',
-      definition: row.definition_part ?? '',
+      answer: row.answer ?? "",
+      clueType: row.clue_type_slug ?? "unknown",
+      clueTypeLabel: row.clue_type_name ?? "Unknown",
+      annotation: row.annotation ?? "",
+      definition: row.definition_part ?? "",
       confidence,
-      source: 'database' as const,
+      source: "database" as const,
     }));
 }
 
@@ -248,12 +292,15 @@ export async function searchDatabase(
   try {
     const supabase = await createServerSupabaseClient();
 
-    // Clean clue text for search
-    const cleanClue = normalizeText(clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, '').trim());
+    // Clean clue text for search; escape LIKE wildcards for the ilike fallback
+    const cleanClue = normalizeText(
+      clueText.replace(/\(\d+(?:,\d+)*\)\s*$/, "").trim()
+    );
+    const escapedClue = cleanClue.replace(/[%_\\]/g, "\\$&");
 
     // Try full-text search first
     let query = supabase
-      .from('clues')
+      .from("clues")
       .select(
         `
         answer,
@@ -266,18 +313,18 @@ export async function searchDatabase(
         clue_types!inner(name, slug)
       `
       )
-      .textSearch('clue_text', cleanClue, {
-        type: 'websearch',
-        config: 'english',
+      .textSearch("clue_text", cleanClue, {
+        type: "websearch",
+        config: "english",
       })
-      .eq('is_verified', true)
+      .eq("is_verified", true)
       .limit(5);
 
     // Filter by letter pattern if provided
     if (letterPattern) {
-      const pattern = letterPattern.replace(/[^0-9,]/g, '');
+      const pattern = letterPattern.replace(/[^0-9,]/g, "");
       if (pattern) {
-        query = query.eq('letter_pattern', pattern);
+        query = query.eq("letter_pattern", pattern);
       }
     }
 
@@ -286,7 +333,7 @@ export async function searchDatabase(
     if (error) {
       // Full-text search might not be set up — fall back to ILIKE
       let fallbackQuery = supabase
-        .from('clues')
+        .from("clues")
         .select(
           `
           answer,
@@ -299,19 +346,18 @@ export async function searchDatabase(
           clue_types!inner(name, slug)
         `
         )
-        .ilike('clue_text', `%${cleanClue}%`)
-        .eq('is_verified', true)
+        .ilike("clue_text", `%${escapedClue}%`)
+        .eq("is_verified", true)
         .limit(5);
 
       if (letterPattern) {
-        const pattern = letterPattern.replace(/[^0-9,]/g, '');
+        const pattern = letterPattern.replace(/[^0-9,]/g, "");
         if (pattern) {
-          fallbackQuery = fallbackQuery.eq('letter_pattern', pattern);
+          fallbackQuery = fallbackQuery.eq("letter_pattern", pattern);
         }
       }
 
-      const { data: fallbackData, error: fallbackError } =
-        await fallbackQuery;
+      const { data: fallbackData, error: fallbackError } = await fallbackQuery;
 
       if (fallbackError || !fallbackData?.length) return [];
 
@@ -323,8 +369,8 @@ export async function searchDatabase(
     return filterAndMapResults(data, cleanClue);
   } catch (err) {
     // Database not available — return empty
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[solver] Supabase search failed:', err);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[solver] Supabase search failed:", err);
     }
     return [];
   }
@@ -339,21 +385,21 @@ function filterAndMapResults(
 ): DatabaseResult[] {
   return rows
     .map((row) => {
-      const score = clueMatchScore(inputClue, (row.clue_text as string) ?? '');
+      const score = clueMatchScore(inputClue, (row.clue_text as string) ?? "");
       const clueTypes = row.clue_types as
         | { name: string; slug: string }
         | undefined;
-      const baseConfidence: 'high' | 'medium' | 'low' =
-        (row.is_verified as boolean) ? 'high' : 'medium';
+      const baseConfidence: "high" | "medium" | "low" =
+        (row.is_verified as boolean) ? "high" : "medium";
       return {
         result: {
-          answer: (row.answer as string) ?? '',
-          clueType: clueTypes?.slug ?? 'unknown',
-          clueTypeLabel: clueTypes?.name ?? 'Unknown',
-          annotation: (row.annotation as string) ?? '',
-          definition: (row.definition_part as string) ?? '',
+          answer: (row.answer as string) ?? "",
+          clueType: clueTypes?.slug ?? "unknown",
+          clueTypeLabel: clueTypes?.name ?? "Unknown",
+          annotation: (row.annotation as string) ?? "",
+          definition: (row.definition_part as string) ?? "",
           confidence: adjustConfidence(baseConfidence, score),
-          source: 'database' as const,
+          source: "database" as const,
         },
         score,
       };

@@ -1,5 +1,5 @@
-import SolverForm from '@/components/solver/SolverForm';
-import Link from 'next/link';
+import Link from "next/link";
+import SolverForm from "@/components/solver/SolverForm";
 
 export default function HomePage() {
   return (
@@ -9,8 +9,8 @@ export default function HomePage() {
           Cryptic Crossword Helper
         </h1>
         <p className="mt-3 text-lg text-muted">
-          Enter a cryptic clue and get an AI-powered explanation of the wordplay.
-          Choose <strong>hint</strong> for a nudge, or{' '}
+          Enter a cryptic clue and get an AI-powered explanation of the
+          wordplay. Choose <strong>hint</strong> for a nudge, or{" "}
           <strong>answer</strong> for the full solution with annotation.
         </p>
       </section>
@@ -19,8 +19,11 @@ export default function HomePage() {
 
       <section className="mt-10 text-center">
         <p className="text-sm text-muted">
-          New to cryptic crosswords?{' '}
-          <Link href="/learn" className="text-primary font-medium hover:underline">
+          New to cryptic crosswords?{" "}
+          <Link
+            href="/learn"
+            className="text-primary font-medium hover:underline"
+          >
             Learn about the 9 clue types
           </Link>
         </p>

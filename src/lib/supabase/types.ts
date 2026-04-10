@@ -17,8 +17,11 @@ export interface Database {
           sort_order: number;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['clue_types']['Row'], 'created_at'>;
-        Update: Partial<Database['public']['Tables']['clue_types']['Insert']>;
+        Insert: Omit<
+          Database["public"]["Tables"]["clue_types"]["Row"],
+          "created_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["clue_types"]["Insert"]>;
       };
       clues: {
         Row: {
@@ -35,8 +38,11 @@ export interface Database {
           is_verified: boolean;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['clues']['Row'], 'created_at'>;
-        Update: Partial<Database['public']['Tables']['clues']['Insert']>;
+        Insert: Omit<
+          Database["public"]["Tables"]["clues"]["Row"],
+          "created_at"
+        >;
+        Update: Partial<Database["public"]["Tables"]["clues"]["Insert"]>;
       };
       clue_examples: {
         Row: {
@@ -52,8 +58,13 @@ export interface Database {
           sort_order: number;
           created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['clue_examples']['Row'], 'created_at'>;
-        Update: Partial<Database['public']['Tables']['clue_examples']['Insert']>;
+        Insert: Omit<
+          Database["public"]["Tables"]["clue_examples"]["Row"],
+          "created_at"
+        >;
+        Update: Partial<
+          Database["public"]["Tables"]["clue_examples"]["Insert"]
+        >;
       };
     };
   };

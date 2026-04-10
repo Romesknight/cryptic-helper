@@ -1,13 +1,13 @@
 export type ClueTypeName =
-  | 'anagram'
-  | 'hidden-word'
-  | 'double-definition'
-  | 'charade'
-  | 'container'
-  | 'reversal'
-  | 'homophone'
-  | 'deletion'
-  | 'cryptic-definition';
+  | "anagram"
+  | "hidden-word"
+  | "double-definition"
+  | "charade"
+  | "container"
+  | "reversal"
+  | "homophone"
+  | "deletion"
+  | "cryptic-definition";
 
 export interface ClueType {
   id: string;

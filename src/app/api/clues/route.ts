@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { CLUE_EXAMPLES } from '@/data/clue-types';
+import { type NextRequest, NextResponse } from "next/server";
+import { CLUE_EXAMPLES } from "@/data/clue-types";
 
 /**
  * GET /api/clues
@@ -8,9 +8,9 @@ import { CLUE_EXAMPLES } from '@/data/clue-types';
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const typeFilter = searchParams.get('type');
-  const difficultyFilter = searchParams.get('difficulty');
-  const query = searchParams.get('q')?.toLowerCase();
+  const typeFilter = searchParams.get("type");
+  const difficultyFilter = searchParams.get("difficulty");
+  const query = searchParams.get("q")?.toLowerCase();
 
   let results = [...CLUE_EXAMPLES];
 
