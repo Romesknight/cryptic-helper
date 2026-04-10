@@ -187,7 +187,11 @@ export async function POST(request: NextRequest) {
             message.includes("high demand") ||
             message.includes("503")
           ? "AI solver is temporarily overloaded. Please try again in a moment, or use the Traditional solver."
-          : "Failed to analyze clue. Please try again.";
+          : message.includes("429") ||
+              message.includes("RESOURCE_EXHAUSTED") ||
+              message.includes("quota")
+            ? "AI solver has reached its usage limit. Please try again later, or use the Traditional solver."
+            : "Failed to analyze clue. Please try again.";
 
     return NextResponse.json(
       { error: safeMessage, code: "SOLVE_ERROR" },
