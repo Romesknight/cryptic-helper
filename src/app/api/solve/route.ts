@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { MAX_CLUE_LENGTH } from "@/lib/constants";
-import { solveClue } from "@/lib/gemini/client";
+import { solveClue } from "@/lib/groq/client";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { solveTraditional } from "@/lib/solvers";
 import { isValidLetterPattern, normalizeText } from "@/lib/utils";

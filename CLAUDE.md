@@ -22,8 +22,8 @@ To run a single test file: `npx vitest run src/lib/rate-limit.test.ts`
 ## Environment Variables
 
 ```
-ANTHROPIC_API_KEY           # Claude AI solver (src/lib/claude/client.ts)
-GOOGLE_GEMINI_API_KEY       # Gemini AI solver — primary AI backend (src/lib/gemini/client.ts)
+GROQ_API_KEY                # Groq AI solver — primary AI backend (src/lib/groq/client.ts)
+ANTHROPIC_API_KEY           # Claude AI solver (src/lib/claude/client.ts) — dormant
 NEXT_PUBLIC_SUPABASE_URL    # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY  # Supabase anon key
 ```
@@ -39,7 +39,7 @@ When Supabase vars are missing or set to placeholder values, the database solver
 The core feature is `POST /api/solve`. It accepts `{ clue, letterPattern, mode, method }` and supports three methods:
 
 - **`traditional`** — `src/lib/solvers/index.ts`: runs database → hidden-word → anagram in sequence, returning on the first confident match.
-- **`ai`** — calls Gemini (`src/lib/gemini/client.ts`). Despite the `src/lib/claude/` directory existing, **Gemini is the active AI solver**. The Claude client is wired up but not called by the solve route.
+- **`ai`** — calls Groq (`src/lib/groq/client.ts`) using `llama-3.3-70b-versatile` with fallback to `llama-3.1-8b-instant`. The Claude and Gemini clients exist but are not called by the solve route.
 - **`both`** — runs traditional and AI in parallel via `Promise.allSettled`, returns an array of `SolveResultWithMethod`.
 
 **Modes:** `hint` returns a descriptive hint string; `answer` returns the full answer with annotation.
