@@ -24,7 +24,7 @@ Cryptic Helper takes a clue and a letter pattern, and either guides you toward t
 2. Hidden word scan (finds answers concealed in the clue text)
 3. Anagram solver (letter-pattern-aware, false-positive-filtered)
 
-**AI solver** (Gemini 2.5 Flash) — handles all clue types including complex hybrids, &lit, and cryptic definitions that rule-based systems can't touch. The prompt is engineered with:
+**AI solver** (Groq · llama-3.3-70b-versatile) — handles all clue types including complex hybrids, &lit, and cryptic definitions that rule-based systems can't touch. The prompt is engineered with:
 - One worked example per clue type (9 core + hybrid + &lit)
 - Explicit disambiguation rules for commonly confused types (container vs hidden word, &lit vs cryptic definition)
 - Mandatory letter-count verification before emitting an answer
@@ -55,7 +55,7 @@ Running both in **Both mode** shows results side-by-side as they arrive, and cro
 | Hint mode | Clue type + indicator identified, definition surfaced, answer withheld |
 | Answer mode | Full annotation with standardised wordplay notation |
 | Traditional solver | Database → hidden word → anagram pipeline |
-| AI solver | Gemini 2.5 Flash with typed response schema and letter-count enforcement |
+| AI solver | Groq (llama-3.3-70b-versatile) with JSON mode and letter-count enforcement |
 | Both mode | Parallel results with cross-validation and incremental rendering |
 | Confidence ratings | `high / medium / low` with strict, honest criteria |
 | Learn section | Clue type reference with worked examples for all 11 types |
@@ -78,8 +78,8 @@ Browser
         │     │     ├── searchDatabase() — Supabase FTS / local SQLite FTS5
         │     │     ├── solveHiddenWord() — word-boundary-aware indicator scan
         │     │     └── solveAnagram() — signature index + pattern filter
-        │     └── AI: solveClue() — Gemini 2.5 Flash
-        │           ├── Typed responseSchema (discriminated union enforced at API)
+        │     └── AI: solveClue() — Groq llama-3.3-70b-versatile
+        │           ├── JSON mode (response_format: json_object)
         │           ├── Shared system prompt (prompts.ts)
         │           └── Runtime schema validation (isSolveResponse)
         └── /learn — static clue type reference (SSG)
@@ -89,7 +89,7 @@ Database
   └── SQLite / better-sqlite3 (local dev) — FTS5, LIKE ESCAPE fallback
 ```
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Supabase · Google Gemini · Anthropic Claude (available, not active) · Vitest
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · Supabase · Groq (llama-3.3-70b-versatile) · Anthropic Claude (dormant) · Vitest
 
 ---
 
@@ -163,7 +163,7 @@ A review pass before making the repository public found issues across three area
 
 **Solver correctness.** The hidden word solver matched indicators inside longer words — `"in"` firing on `"interesting"` — causing false positives that preempted the anagram solver. The anagram solver pushed single-letter fodder candidates when no letter pattern was provided, flooding results with noise. Both bugs were in completely untested code. Tests for the specific failure modes were added alongside the fixes.
 
-**AI quality.** Three root causes explained most failures. No schema enforcement: `responseMimeType: 'application/json'` forces valid JSON but nothing about shape — the model could produce structurally invalid responses that passed validation silently. Fix: typed `responseSchema` per mode enforced at the Gemini API level. Letter pattern was advisory not mandatory — the model could report high confidence on a wrong-length answer. Fix: the user prompt now computes and states the total letter count explicitly with a mandatory reject-and-retry instruction. All nine few-shot examples showed answer mode — the model had never seen a correct hint response. Fix: a good hint example plus three explicitly labelled bad examples (reveals answer, too vague, returns wrong field).
+**AI quality.** Three root causes explained most failures. No schema enforcement: returning valid JSON but wrong shape caused silent validation failures. Fix: runtime `isSolveResponse` guard validates the discriminated union after parsing. Letter pattern was advisory not mandatory — the model could report high confidence on a wrong-length answer. Fix: the user prompt now computes and states the total letter count explicitly with a mandatory reject-and-retry instruction. All nine few-shot examples showed answer mode — the model had never seen a correct hint response. Fix: a good hint example plus three explicitly labelled bad examples (reveals answer, too vague, returns wrong field).
 
 **Two new clue types.** Hybrid clues (combined mechanisms) and &lit clues (whole clue is simultaneously definition and wordplay) were absent from the type system. Adding them required a consistent compact notation (`WORD*` for anagram, `WORD<` for reversal, `X around Y` vs `X in Y` for container direction based on which way the indicator points) and worked examples in both the data layer and the prompt. The notation system is a product decision: consistent annotation format makes the AI's output learnable rather than just plausible.
 
@@ -181,7 +181,7 @@ A review pass before making the repository public found issues across three area
 
 **AI confidence is self-reported.** The model assesses its own confidence, which is better than nothing but not calibrated. A validation pass comparing AI answers against the database (already partially done via cross-validation in Both mode) could produce more reliable confidence scores.
 
-**The Claude client is wired up but inactive.** Swapping the AI backend in `route.ts` is a one-line change. Both clients share the same prompt, schema, and response validation. This makes A/B testing model quality straightforward when needed.
+**AI solver accuracy is limited by the open model.** Groq's free tier uses `llama-3.3-70b-versatile`, which is capable but not frontier-class. It pattern-matches to plausible answers rather than verifying wordplay letter-by-letter. Upgrading to Claude or GPT-4 class models would improve accuracy, at cost. The Claude client is dormant but ready — swapping the backend is a one-line change in `route.ts`.
 
 ---
 

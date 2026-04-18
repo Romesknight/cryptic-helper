@@ -19,15 +19,6 @@ npm run db:build-local  # Build local SQLite DB at scripts/data/clues-local.db
 
 To run a single test file: `npx vitest run src/lib/rate-limit.test.ts`
 
-## Pre-Commit Checklist
-
-Before any commit, run:
-```bash
-npm audit --audit-level=high   # Fail on high/critical vulnerabilities
-npm run build                  # Confirm production build is clean
-npm run test                   # Confirm tests pass
-```
-
 ## Environment Variables
 
 ```
